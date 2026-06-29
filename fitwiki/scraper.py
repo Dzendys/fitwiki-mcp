@@ -6,7 +6,17 @@ import unicodedata
 from typing import List, Dict, Any, Optional
 import requests
 from bs4 import BeautifulSoup
-from markdownify import markdownify as md
+from markdownify import markdownify as md, MarkdownConverter
+
+class FitWikiMarkdownConverter(MarkdownConverter):
+    """
+    Custom MarkdownConverter that preserves <table> elements as raw HTML in the Markdown file,
+    ensuring that complex cells (containing blocks, lists, or multiple lines) do not break the table structure.
+    """
+    def convert_table(self, el, text, **kwargs):
+        # Return the raw HTML representation of the table element
+        return "\n\n" + str(el) + "\n\n"
+
 
 from .config import ScraperConfig
 
@@ -361,16 +371,13 @@ class FitWikiScraper:
             else:
                 img.decompose() # Remove non-content layout images
                 
-        # Convert to Markdown using markdownify
-        # We specify convert=['img', 'a', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre', 'br']
-        # to ensure markdownify parses tables properly.
+        # Convert to Markdown using our custom converter to preserve HTML tables
         html_str = str(clean_soup)
-        md_content = md(
-            html_str,
+        md_content = FitWikiMarkdownConverter(
             heading_style="ATX",
             bullets="-",
             strip=['script', 'style']
-        )
+        ).convert(html_str)
         
         # Format consecutive images with double newlines
         md_content = self._format_markdown_images(md_content)
