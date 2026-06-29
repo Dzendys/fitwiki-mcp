@@ -2,6 +2,7 @@ import os
 import re
 import time
 import urllib.parse
+import unicodedata
 from typing import List, Dict, Any, Optional
 import requests
 from bs4 import BeautifulSoup
@@ -92,12 +93,17 @@ class FitWikiScraper:
 
     def _url_to_cache_filename(self, url: str) -> str:
         """
-        Converts an URL into a safe, readable cache filename.
+        Converts an URL into a safe, readable cache filename after stripping diacritics.
         """
         parsed = urllib.parse.urlparse(url)
         path = urllib.parse.unquote(parsed.path)
+        
+        # Remove accents/diacritics using Unicode normalization
+        nfd_form = unicodedata.normalize('NFD', path)
+        unaccented_path = "".join([c for c in nfd_form if unicodedata.category(c) != 'Mn'])
+        
         # Combine path and query to create unique identifier
-        name = path.strip('/')
+        name = unaccented_path.strip('/')
         if parsed.query:
             name += '_' + parsed.query
         # Replace unsafe characters
