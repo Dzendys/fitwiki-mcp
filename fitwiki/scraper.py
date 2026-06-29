@@ -183,7 +183,7 @@ class FitWikiScraper:
             # Section Edit buttons
             '.btn_secedit', '.secedit',
             # Discussions
-            '#discussion__section', '.discussion',
+            '#discussion__section', '.discussion', '#comment_wrapper', '.comment_wrapper',
             # Navigation breadcrumbs & page ID
             '.breadcrumbs', '.pageId',
             # Fastwiki markers & edit buttons
