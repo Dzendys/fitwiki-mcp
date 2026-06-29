@@ -342,3 +342,54 @@ class FitWikiScraper:
             f.write(full_md_content)
             
         return md_path
+
+    def scrape_courses_index(self, html_content: str) -> List[Dict[str, str]]:
+        """
+        Parses the subjects index page and extracts all courses.
+        """
+        soup = BeautifulSoup(html_content, 'html.parser')
+        courses = []
+        
+        for a_tag in soup.find_all('a', href=True):
+            href = a_tag['href']
+            text = a_tag.get_text(strip=True)
+            
+            # Decode and normalize path
+            decoded_href = urllib.parse.unquote(href)
+            parsed = urllib.parse.urlparse(decoded_href)
+            path = parsed.path.rstrip('/')
+            
+            # Check if path matches /škola/předměty/some-code
+            parts = path.strip('/').split('/')
+            if len(parts) == 3 and parts[0] == 'škola' and parts[1] == 'předměty':
+                course_code = parts[2]
+                
+                if course_code in ['start', 'pomoc', 'předměty']:
+                    continue
+                    
+                full_url = self.config.base_url + href if href.startswith('/') else href
+                
+                courses.append({
+                    'code': course_code,
+                    'title': text or course_code.upper(),
+                    'url': full_url
+                })
+                
+        # Remove duplicates, sorting by code
+        seen = set()
+        unique_courses = []
+        for c in sorted(courses, key=lambda x: x['code']):
+            if c['code'] not in seen:
+                seen.add(c['code'])
+                unique_courses.append(c)
+                
+        return unique_courses
+
+    def get_courses(self) -> List[Dict[str, str]]:
+        """
+        Fetches the courses list index from the web (or cache) and parses it.
+        """
+        courses_url = f"{self.config.base_url}/škola/předměty"
+        html = self._get_page_html(courses_url)
+        return self.scrape_courses_index(html)
+

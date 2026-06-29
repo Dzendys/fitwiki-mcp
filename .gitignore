@@ -1,5 +1,6 @@
 # Sensitive files
 index.sh
+predmety.sh
 .env*
 !.env.example
 
