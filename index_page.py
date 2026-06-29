@@ -31,16 +31,20 @@ def extract_from_index_sh() -> tuple:
     return url, cookies
 
 def main():
+    config = ScraperConfig.from_env()
+    
     print("Parsing index.sh configuration...")
     url, cookie_str = extract_from_index_sh()
     
     print(f"Target URL: {url}")
     if cookie_str:
-        print("Cookies found in index.sh.")
+        print("Cookies loaded from index.sh.")
+        config.cookies = ScraperConfig.from_cookie_string(cookie_str).cookies
+    elif config.cookies:
+        print("Cookies loaded from environment/dotenv.")
     else:
-        print("Warning: No cookies found in index.sh.")
-        
-    config = ScraperConfig.from_cookie_string(cookie_str=cookie_str)
+        print("Warning: No cookies found in index.sh or environment/dotenv.")
+
     
     print(f"Downloading main page {url}...")
     try:

@@ -1,5 +1,7 @@
 # Sensitive files
 index.sh
+.env*
+!.env.example
 
 # Python environment and cache
 venv/
