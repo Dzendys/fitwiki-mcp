@@ -15,9 +15,14 @@ def main():
     with open(index_file, "r", encoding="utf-8") as f:
         html_content = f.read()
         
-    # Extract cookies from index.sh to authenticate subpage requests
+    # Load config and cookies from env/dotenv
+    config = ScraperConfig.from_env()
+    
+    # Extract cookies from index.sh to override if found
     _, cookie_str = extract_from_index_sh()
-    config = ScraperConfig.from_cookie_string(cookie_str=cookie_str)
+    if cookie_str:
+        config.cookies = ScraperConfig.from_cookie_string(cookie_str).cookies
+        
     scraper = FitWikiScraper(config)
     
     print("Parsing index page and extracting links...")
