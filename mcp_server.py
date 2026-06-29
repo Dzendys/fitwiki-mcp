@@ -22,6 +22,16 @@ def _get_config(cookies: str = "") -> ScraperConfig:
         return ScraperConfig.from_cookie_string(cookie_str=cookies)
     return ScraperConfig.from_env()
 
+def _resolve_url(code_or_url: str) -> str:
+    """
+    Resolves a course code or absolute URL into a full DokuWiki URL.
+    """
+    if code_or_url.startswith("http"):
+        return code_or_url
+    config = ScraperConfig.from_env()
+    return f"{config.base_url}/škola/předměty/{code_or_url.lower()}"
+
+
 @mcp.tool()
 def scrape_index(index_path_or_url: str, cookies: str = "") -> str:
     """
@@ -179,6 +189,111 @@ def compile_pdf(markdown_path: str, pdf_path: str) -> str:
             return "Failed to compile PDF. Check log for details."
     except Exception as e:
         return f"Error compiling PDF: {str(e)}"
+
+@mcp.tool()
+def list_course_sections(course_code_or_url: str, cookies: str = "") -> str:
+    """
+    Lists all material sections/categories (e.g. 'zkouska', 'test1') for a given subject.
+
+    Args:
+        course_code_or_url: Subject code (e.g. 'bi-osy') or full course index URL.
+        cookies: DokuWiki session cookies. Optional.
+    """
+    url = _resolve_url(course_code_or_url)
+    config = _get_config(cookies)
+    scraper = FitWikiScraper(config)
+    
+    try:
+        html = scraper._get_page_html(url)
+        links = scraper.scrape_index(html)
+        if not links:
+            return f"No subpages or sections found for course at {url}."
+            
+        sections = set(l['category'] for l in links)
+        output = [f"Found {len(sections)} sections for course {course_code_or_url.upper()}:\n"]
+        for s in sorted(sections):
+            count = sum(1 for l in links if l['category'] == s)
+            output.append(f"- {s} ({count} pages/terms)")
+            
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error listing sections: {str(e)}"
+
+@mcp.tool()
+def list_section_pages(course_code_or_url: str, sections: str, cookies: str = "") -> str:
+    """
+    Lists all pages (exam terms, test variants) within specific sections of a course.
+
+    Args:
+        course_code_or_url: Subject code (e.g. 'bi-osy') or course index URL.
+        sections: Comma-separated list of sections (e.g. 'zkouska,test1') to filter.
+        cookies: DokuWiki session cookies. Optional.
+    """
+    url = _resolve_url(course_code_or_url)
+    config = _get_config(cookies)
+    scraper = FitWikiScraper(config)
+    
+    try:
+        html = scraper._get_page_html(url)
+        links = scraper.scrape_index(html)
+        if not links:
+            return f"No pages found for course at {url}."
+            
+        filter_sections = [s.strip().lower() for s in sections.split(',')]
+        filtered_links = [l for l in links if l['category'] in filter_sections]
+        
+        if not filtered_links:
+            return f"No pages found in sections: {sections}."
+            
+        output = [f"Found {len(filtered_links)} pages/terms in sections [{sections}] of {course_code_or_url.upper()}:\n"]
+        for i, l in enumerate(filtered_links, 1):
+            output.append(f"{i}. [{l['category']}] {l['title']} - URL: {l['url']}")
+            
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error listing section pages: {str(e)}"
+
+@mcp.tool()
+def download_page(url: str, category: str, title: str, cookies: str = "") -> str:
+    """
+    Downloads a single page, converts it to Markdown, and compiles it to PDF.
+    Returns paths to both files.
+
+    Args:
+        url: URL of the page to download.
+        category: Category section (e.g. 'zkouska', 'test1') for storing files.
+        title: Title of the page.
+        cookies: DokuWiki session cookies. Optional.
+    """
+    config = _get_config(cookies)
+    scraper = FitWikiScraper(config)
+    compiler = FitWikiPDFCompiler(config)
+    
+    try:
+        # 1. Scrape to Markdown
+        md_path = scraper.scrape_page(url, category, title)
+        
+        # 2. Compile to PDF
+        pdf_filename = os.path.basename(md_path).replace('.md', '.pdf')
+        category_pdf_dir = os.path.join(config.pdf_dir, category)
+        os.makedirs(category_pdf_dir, exist_ok=True)
+        pdf_path = os.path.join(category_pdf_dir, pdf_filename)
+        
+        success = compiler.compile_file(md_path, pdf_path)
+        
+        if success:
+            return (
+                f"Success! Page downloaded and compiled:\n"
+                f"- Markdown path: {md_path}\n"
+                f"- PDF path: {pdf_path}"
+            )
+        else:
+            return (
+                f"Page scraped to Markdown: {md_path}\n"
+                f"Warning: PDF compilation failed (check log for details)."
+            )
+    except Exception as e:
+        return f"Error processing page: {str(e)}"
 
 @mcp.tool()
 def compile_category_pdfs(category: str) -> str:
