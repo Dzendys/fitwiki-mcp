@@ -30,7 +30,7 @@ The codebase is organized into a modular Python package `fitwiki` along with hel
   - [pdf.py](file:///home/dzendys_/Downloads/fitwiki/fitwiki/pdf.py): `FitWikiPDFCompiler` processes tables and code blocks, registers Liberation Sans fonts, and compiles Markdown into clean, lightweight PDFs.
 
 - **CLI Scripts:**
-  - [index_page.py](file:///home/dzendys_/Downloads/fitwiki/index_page.py): Downloads the course index page to `index-page.html`. It automatically parses cookies and base URLs from an existing `index.sh` or local configuration.
+  - [index_page.py](file:///home/dzendys_/Downloads/fitwiki/index_page.py): Downloads the course index page to `index-page.html` using the configured authentication.
   - [scraper.py](file:///home/dzendys_/Downloads/fitwiki/scraper.py): Interactive console downloader. It prompts the user to select specific course categories and processes them into Markdown files.
   - [convert_to_pdf.py](file:///home/dzendys_/Downloads/fitwiki/convert_to_pdf.py): Compiles all downloaded Markdown files in `markdown_output/` into PDF files in `pdfs/`.
 
@@ -47,7 +47,6 @@ Authorized access is required to scrape content from Fit-Wiki. The scraper confi
    FITWIKI_COOKIES="DokuWiki=your_session_id; DW7fa...=your_auth_token"
    ```
 2. **Using environment variables:** Expose the cookies directly using `FITWIKI_COOKIES` environment variable.
-3. **Using `index.sh` fallback:** If no credentials are found in the environment, CLI scripts attempt to parse curl cookies from your local `index.sh` script.
 
 ---
 
