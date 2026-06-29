@@ -6,15 +6,6 @@ from fitwiki.scraper import FitWikiScraper
 from index_page import extract_from_index_sh
 
 def main():
-    index_file = "index-page.html"
-    if not os.path.exists(index_file):
-        print(f"Error: {index_file} not found. Please run index_page.py first.")
-        sys.exit(1)
-        
-    # Read index content
-    with open(index_file, "r", encoding="utf-8") as f:
-        html_content = f.read()
-        
     # Load config and cookies from env/dotenv
     config = ScraperConfig.from_env()
     
@@ -25,6 +16,38 @@ def main():
         
     scraper = FitWikiScraper(config)
     
+    # Check for course argument or missing index file
+    course_code = None
+    if len(sys.argv) > 1:
+        course_code = sys.argv[1]
+        
+    index_file = "index-page.html"
+    
+    if course_code or not os.path.exists(index_file):
+        if not course_code:
+            try:
+                course_code = input("Local index-page.html not found.\nEnter course code to download (e.g. bi-osy, bi-pst) [default: bi-osy]: ").strip().lower()
+            except KeyboardInterrupt:
+                print("\nOperation cancelled.")
+                sys.exit(0)
+            if not course_code:
+                course_code = "bi-osy"
+        
+        course_url = f"{config.base_url}/škola/předměty/{course_code}"
+        print(f"Downloading index page for {course_code.upper()} from: {course_url}...")
+        try:
+            html_content = scraper._get_page_html(course_url)
+            with open(index_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            print(f"Successfully saved index page to {index_file}")
+        except Exception as e:
+            print(f"Error downloading index page: {e}")
+            sys.exit(1)
+    else:
+        print(f"Reading existing index page: {index_file}")
+        with open(index_file, "r", encoding="utf-8") as f:
+            html_content = f.read()
+            
     print("Parsing index page and extracting links...")
     links = scraper.scrape_index(html_content)
     
