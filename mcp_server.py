@@ -304,6 +304,8 @@ def download_page(url: str, category: str, title: str, cookies: str = "") -> str
     except Exception as e:
         return f"Error processing page: {str(e)}"
 
+import glob
+
 @mcp.tool()
 def read_saved_file(path: str) -> str:
     """
@@ -311,17 +313,34 @@ def read_saved_file(path: str) -> str:
     Useful when you've scraped a page but the content wasn't fully returned,
     or to re-read a file from a previous session.
 
+    If the exact path is not found, lists available files in the parent directory
+    so the LLM can find the correct filename.
+
     Args:
         path: Absolute or relative path to the Markdown file (e.g. 'markdown_output/bi-osy/zkouska/example.md').
     """
     try:
-        # Resolve relative paths against the project root
         if not os.path.isabs(path):
             base = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(base, path)
-        with open(path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return f"--- {path} ---\n\n{content}"
+
+        if os.path.isfile(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return f"--- {path} ---\n\n{content}"
+
+        # File not found — list directory contents to help the LLM
+        dir_path = os.path.dirname(path) if os.path.dirname(path) else base
+        if os.path.isdir(dir_path):
+            files = sorted(os.listdir(dir_path))
+            md_files = [f for f in files if f.endswith('.md')]
+            if md_files:
+                return (
+                    f"File not found: {path}\n\n"
+                    f"Available .md files in {dir_path}:\n" +
+                    "\n".join(f"- {f}" for f in md_files[:50])
+                )
+        return f"File not found: {path}"
     except Exception as e:
         return f"Error reading file: {str(e)}"
 
