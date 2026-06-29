@@ -383,18 +383,19 @@ class FitWikiScraper:
             
             if is_latex:
                 if latex_idx < len(latex_formulas):
-                    # Replace image tag with the original LaTeX text formula
+                    # Replace the alt text with the original LaTeX formula
                     formula = latex_formulas[latex_idx]
                     latex_idx += 1
-                    # Wrap in standard Markdown math syntax
-                    img.replace_with(f" ${formula}$ ")
+                    # Clean newlines to keep the markdown image tag on a single line
+                    clean_formula = formula.replace('\n', ' ').replace('\r', ' ').strip()
+                    img['alt'] = clean_formula
+                    
+                # Download the image so the PDF compiler can render the formula
+                local_rel_path = self._download_image(src, category, page_slug)
+                if local_rel_path:
+                    img['src'] = local_rel_path
                 else:
-                    # Fallback to downloading as image if count mismatched
-                    local_rel_path = self._download_image(src, category, page_slug)
-                    if local_rel_path:
-                        img['src'] = local_rel_path
-                    else:
-                        img.decompose()
+                    img.decompose()
             elif self._should_download_image(src):
                 local_rel_path = self._download_image(src, category, page_slug)
                 if local_rel_path:
