@@ -56,7 +56,7 @@ Compiles all files in `markdown_output/` to `pdfs/`.
 
 ## MCP Server
 
-The MCP server exposes Fit-Wiki tools to LLM clients. It runs via stdio or SSE.
+The MCP server exposes Fit-Wiki tools to LLM clients. It runs via stdio or streamable-http.
 
 ### Client Configuration
 
@@ -99,7 +99,7 @@ Restart the client after saving. For AGY, verify with `/mcp` in chat.
 docker compose up -d
 ```
 
-The container exposes the MCP server on port 8000 via SSE. Mounted volumes persist `markdown_output/` and `pdfs/` on the host.
+The container exposes the MCP server on port 8000 via streamable-http. Mounted volumes persist `markdown_output/` and `pdfs/` on the host.
 
 ### GitHub Container Registry
 
