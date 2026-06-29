@@ -1,7 +1,6 @@
 services:
   fitwiki-mcp:
     build: .
-    image: ghcr.io/${GITHUB_REPOSITORY}:latest
     container_name: fitwiki-mcp
     restart: unless-stopped
     ports:
