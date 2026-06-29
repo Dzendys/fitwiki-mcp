@@ -10,8 +10,8 @@ services:
       - .env
     environment:
       - MCP_TRANSPORT=sse
-      - FASTMCP_HOST=0.0.0.0
-      - FASTMCP_PORT=8000
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
     volumes:
       - ./markdown_output:/app/markdown_output
       - ./pdfs:/app/pdfs
