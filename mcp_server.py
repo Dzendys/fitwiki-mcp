@@ -340,5 +340,5 @@ def list_courses(cookies: str = "") -> str:
         return f"Error listing courses: {str(e)}"
 
 if __name__ == "__main__":
-    # FastMCP server runs on stdin/stdout by default
-    mcp.run()
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    mcp.run(transport=transport)
