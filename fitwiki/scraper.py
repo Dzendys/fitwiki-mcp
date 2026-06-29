@@ -200,6 +200,16 @@ class FitWikiScraper:
             for element in clean_soup.select(selector):
                 element.decompose()
                 
+        # Decompose collapsed headers in hidden blocks (with '[+]')
+        for h_on_h in clean_soup.select('.hiddenOnHidden'):
+            h_on_h.decompose()
+            
+        # Clean '[-]' prefix from expanded headers
+        for h_on_v in clean_soup.select('.hiddenOnVisible'):
+            for string in h_on_v.find_all(string=True):
+                new_text = re.sub(r'^\s*\[-\]\s*', '', string)
+                string.replace_with(new_text)
+                
         return clean_soup
 
     def _should_download_image(self, src: str) -> bool:
