@@ -54,29 +54,45 @@ Authorized access is required to scrape content from Fit-Wiki. The scraper confi
 
 Follow this workflow to scrape and compile a course manually via CLI:
 
-1. **Download the course index page:**
+1. **Run the interactive scraper:**
    ```bash
-   ./index_page.py
+   ./scraper.py [course_code]
    ```
-   This saves the page structure to `index-page.html`.
+   - If `index-page.html` is not found, the script will prompt you for the course code (default: `bi-osy`) and download the index page automatically.
+   - You can force download/refresh a specific course index by passing its code as an argument (e.g., `./scraper.py bi-pst`).
+   - Choose the categories you wish to download (e.g., `1,2` or `all`). The generated Markdown files and downloaded media are saved to the `markdown_output/` directory.
 
-2. **Run the interactive scraper:**
-   ```bash
-   ./scraper.py
-   ```
-   Specify the categories you wish to download (e.g. `1,2` or `all`). The generated Markdown files and downloaded media are saved to the `markdown_output/` directory.
-
-3. **Export Markdown to PDF:**
+2. **Export Markdown to PDF:**
    ```bash
    ./convert_to_pdf.py
    ```
-   The compiled PDF files are saved to the `pdfs/` directory under corresponding categories.
+   This compiles all downloaded Markdown documents to PDF files inside the `pdfs/` directory under their corresponding categories.
 
 ---
 
 ## 5. MCP Server Configuration
 
-To connect this workspace as a tool provider for LLM clients like Claude Desktop, add the server to your configuration file (usually located at `~/.config/Claude/claude_desktop_config.json` on Linux):
+To connect this workspace as a tool provider for LLM clients, add the server configuration using one of the configurations below.
+
+### For Claude Desktop
+Add the server configuration to your `claude_desktop_config.json` (usually located at `~/.config/Claude/claude_desktop_config.json` on Linux):
+
+```json
+{
+  "mcpServers": {
+    "fitwiki": {
+      "command": "/home/dzendys_/Downloads/fitwiki/venv/bin/python",
+      "args": ["/home/dzendys_/Downloads/fitwiki/mcp_server.py"],
+      "env": {
+        "FITWIKI_COOKIES": "DokuWiki=your_session_id; DW7fa...=your_auth_token"
+      }
+    }
+  }
+}
+```
+
+### For Google Antigravity (AGY)
+Add the server configuration to your Antigravity settings file (`~/.gemini/antigravity-cli/settings.json`):
 
 ```json
 {
