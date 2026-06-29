@@ -148,6 +148,10 @@ class FitWikiScraper:
         """
         soup = BeautifulSoup(html_content, 'html.parser')
         
+        # Decompose all script and style elements completely from the source
+        for script_style in soup.find_all(['script', 'style']):
+            script_style.decompose()
+            
         # Find main content container in DokuWiki (usually div.page or inside div#dokuwiki__content)
         content_div = soup.select_one('div.page')
         if not content_div:
@@ -158,15 +162,26 @@ class FitWikiScraper:
         # Create a new clean BeautifulSoup object from the content
         clean_soup = BeautifulSoup(str(content_div), 'html.parser')
         
+        # Remove any nested script/style elements inside content
+        for script_style in clean_soup.find_all(['script', 'style']):
+            script_style.decompose()
+            
         # Remove non-content elements
         selectors_to_remove = [
-            'div.toc', 'div#dw__toc',                # Table of Contents
-            'form.btn_secedit', 'div.secedit',       # Section Edit buttons
-            'div#discussion__section', 'div.discussion', # Discussions
-            'div.breadcrumbs', 'div.pageId',         # Navigation breadcrumbs & page ID
-            'div.style-buttons',                     # Fastwiki markers
-            'span.editbutton',                       # Edit buttons
-            'a.fn_back'                              # Footnote back links
+            # Table of Contents
+            '.toc', '#dw__toc', '.dw-toc', '.bootstrap3-toc', '.bootstrap-toc', '.toc-wrapper',
+            # Section Edit buttons
+            '.btn_secedit', '.secedit',
+            # Discussions
+            '#discussion__section', '.discussion',
+            # Navigation breadcrumbs & page ID
+            '.breadcrumbs', '.pageId',
+            # Fastwiki markers & edit buttons
+            '.style-buttons', '.editbutton', '.fn_back',
+            # DokuWiki action/share panels & tools
+            '.bar', '.meta', '.docInfo', '.pagetools', '.usertools',
+            '#dokuwiki__pagetools', '#dokuwiki__usertools',
+            '.dw-page-icons', '.shareon', '.share', '.share-buttons', '.social-share', '.share-icon'
         ]
         
         for selector in selectors_to_remove:
