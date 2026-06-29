@@ -233,7 +233,7 @@ class FitWikiPDFCompiler:
 </html>
 """
 
-def compile_file(self, md_path: str, pdf_path: str) -> bool:
+    def compile_file(self, md_path: str, pdf_path: str) -> bool:
         """
         Compiles a single Markdown file to a PDF document.
         """
