@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import os
 import sys
+import re
+import urllib.parse
+import unicodedata
 from typing import List, Dict, Any
 
 # Ensure standard import path works
@@ -32,6 +35,21 @@ def _resolve_url(code_or_url: str) -> str:
         return code_or_url
     config = ScraperConfig.from_env()
     return f"{config.base_url}/škola/předměty/{code_or_url.lower()}"
+
+def _page_slug(url: str) -> str:
+    """
+    Converts a page URL to its filename slug (same logic as FitWikiScraper._url_to_cache_filename).
+    Returns the slug without .html extension, used to construct the .md filename.
+    """
+    parsed = urllib.parse.urlparse(url)
+    decoded = urllib.parse.unquote(parsed.path)
+    nfd = unicodedata.normalize('NFD', decoded)
+    unaccented = "".join(c for c in nfd if unicodedata.category(c) != 'Mn')
+    name = unaccented.strip('/')
+    if parsed.query:
+        name += '_' + parsed.query
+    slug = re.sub(r'[^a-zA-Z0-9_\-]', '_', name)
+    return slug if slug else 'index'
 
 
 @mcp.tool()
@@ -73,7 +91,8 @@ def scrape_index(index_path_or_url: str, cookies: str = "") -> str:
         for cat, items in categories_dict.items():
             output.append(f"\n### Category: {cat} ({len(items)} pages)")
             for i, item in enumerate(items, 1):
-                output.append(f"{i}. {item['title']} - URL: {item['url']}")
+                slug = _page_slug(item['url'])
+                output.append(f"{i}. {item['title']} - File: {slug}.md - URL: {item['url']}")
                 
         return "\n".join(output)
         
@@ -251,7 +270,8 @@ def list_section_pages(course_code_or_url: str, sections: str, cookies: str = ""
             
         output = [f"Found {len(filtered_links)} pages/terms in sections [{sections}] of {course_code_or_url.upper()}:\n"]
         for i, l in enumerate(filtered_links, 1):
-            output.append(f"{i}. [{l['category']}] {l['title']} - URL: {l['url']}")
+            slug = _page_slug(l['url'])
+            output.append(f"{i}. [{l['category']}] {l['title']} - File: {slug}.md - URL: {l['url']}")
             
         return "\n".join(output)
     except Exception as e:
