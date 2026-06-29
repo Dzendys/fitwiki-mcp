@@ -3,14 +3,29 @@
 These instructions guide how AI agents should interact with the user and the codebase when discussing subjects, exams, or test materials in this workspace.
 
 ## 1. Context and Tools
-- This workspace contains a Fit-Wiki scraper and PDF compiler, integrated as an MCP server in [mcp_server.py](mcp_server.py).
-- Use the MCP tools (`list_courses`, `list_course_sections`, `list_section_pages`, `download_page`, `compile_pdf`, `compile_category_pdfs`) whenever the user asks about courses, topics, exam terms, or test materials.
+- This workspace contains a Fit-Wiki scraper and PDF compiler, integrated as an MCP server.
+- **CRITICAL:** Do NOT read, parse, or analyze the python files (e.g., `mcp_server.py`, `scraper.py`, `index_page.py`, `fitwiki/scraper.py`, `fitwiki/pdf.py`) to understand how to scrape or compile. The workspace has custom pre-registered MCP tools. Use them directly.
+- **Exposed MCP Tools:**
+  - `list_courses`: Lists all subjects and courses available on the Fit-Wiki.
+  - `list_course_sections`: Lists sections and categories (e.g., 'zkouska', 'test1') for a given subject.
+  - `list_section_pages`: Lists individual pages and exam terms in specific course sections.
+  - `download_page`: Scrapes a single page to Markdown and compiles it to PDF in one action.
+  - `compile_pdf`: Compiles a specified Markdown file into a lightweight PDF.
+  - `compile_category_pdfs`: Compiles all Markdown files inside a category folder to PDFs.
 
-## 2. Interactive Workflow
-- **Subject Mention:** When the user mentions a subject code (e.g., "bi-osy", "osy", "bi-pst"), check if the course sections are already discovered. If not, use `list_course_sections` to fetch them and list categories like `zkouska` (exams) or `test1`/`test2` (term tests) to guide the user.
-- **Exam / Test Mentions:** When the user asks about a specific exam variant or term (e.g., "termín z 26.5.2023"):
-  1. Check if the page's Markdown file is already downloaded under `markdown_output/<category>/<page_slug>.md`.
-  2. If found, read its content to answer the user's questions.
-  3. If not found, **proactively offer to download and compile it** using the `download_page` tool.
-- **Completeness Offer:** When a user requests downloading or discussing a specific exam term, check if there are other terms in the same section (using `list_section_pages`). **Proactively offer to download or list the other related terms** so the user has the complete set of study materials.
-- **LaTeX Math:** When explaining math formulas from the wiki, refer to the LaTeX formulas embedded in the Markdown image alt attributes (e.g., `![formula](...)`).
+## 2. Directory Structure
+- `cache/`: Local HTML files cache.
+- `markdown_output/`: Converted markdown files grouped by category (e.g., `markdown_output/zkouska/`).
+- `pdfs/`: Compiled PDF files grouped by category (e.g., `pdfs/zkouska/`).
+
+## 3. Resolving Course & Exam Queries
+If the user asks about a course or exam questions (e.g., "Co bylo na zkoušce z BI-PA1?"):
+1. **Identify the Course Code:** E.g., `BI-PA1` or `bi-pai`.
+2. **List Sections:** Call `list_course_sections` with the course code.
+3. **List Pages in Section:** Call `list_section_pages` for the relevant section (typically `zkouska` for exams).
+4. **Locate Downloaded Markdown:** Check if the corresponding `.md` file is already in `markdown_output/<category>/`.
+   - If yes: read it using `view_file` to answer the question directly.
+   - If no: call `download_page` for the term to fetch the content, and then read the generated Markdown file to answer the user.
+5. **LaTeX Math:** When explaining math formulas from the wiki, refer to the LaTeX formulas embedded in the Markdown image alt attributes (e.g., `![formula](...)`).
+6. **DO NOT write custom python scripts or run raw curl commands to download or scrape pages.** Always use the MCP tools.
+7. **Proactively offer completeness:** When a user requests downloading or discussing a specific exam term, check if there are other terms in the same section (using `list_section_pages`). Proactively offer to download or list the other related terms so the user has the complete set of study materials.
