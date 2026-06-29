@@ -12,7 +12,9 @@ from fitwiki.scraper import FitWikiScraper
 from fitwiki.pdf import FitWikiPDFCompiler
 
 # Initialize FastMCP server
-mcp = FastMCP("FitWiki Server")
+host = os.getenv("MCP_HOST", "127.0.0.1")
+port = int(os.getenv("MCP_PORT", "8000"))
+mcp = FastMCP("FitWiki Server", host=host, port=port)
 
 def _get_config(cookies: str = "") -> ScraperConfig:
     """
