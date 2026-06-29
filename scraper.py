@@ -3,16 +3,9 @@ import os
 import sys
 from fitwiki.config import ScraperConfig
 from fitwiki.scraper import FitWikiScraper
-from index_page import extract_from_index_sh
 
 def main():
-    # Load config and cookies from env/dotenv
     config = ScraperConfig.from_env()
-    
-    # Extract cookies from index.sh to override if found
-    _, cookie_str = extract_from_index_sh()
-    if cookie_str:
-        config.cookies = ScraperConfig.from_cookie_string(cookie_str).cookies
         
     scraper = FitWikiScraper(config)
     
@@ -26,12 +19,13 @@ def main():
     if course_code or not os.path.exists(index_file):
         if not course_code:
             try:
-                course_code = input("Local index-page.html not found.\nEnter course code to download (e.g. bi-osy, bi-pst) [default: bi-osy]: ").strip().lower()
+                course_code = input("Local index-page.html not found.\nEnter course code to download (e.g. bi-osy, bi-pst): ").strip().lower()
             except KeyboardInterrupt:
                 print("\nOperation cancelled.")
                 sys.exit(0)
             if not course_code:
-                course_code = "bi-osy"
+                print("Course code required.")
+                sys.exit(1)
         
         course_url = f"{config.base_url}/škola/předměty/{course_code}"
         print(f"Downloading index page for {course_code.upper()} from: {course_url}...")
