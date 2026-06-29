@@ -200,6 +200,30 @@ def compile_category_pdfs(category: str) -> str:
     except Exception as e:
         return f"Error compiling category PDFs: {str(e)}"
 
+@mcp.tool()
+def list_courses(cookies: str = "") -> str:
+    """
+    Lists all subjects/courses taught at FIT. Fetches and parses the main subjects page on Fit-Wiki.
+
+    Args:
+        cookies: DokuWiki session cookies. Optional.
+    """
+    config = _get_config(cookies)
+    scraper = FitWikiScraper(config)
+    
+    try:
+        courses = scraper.get_courses()
+        if not courses:
+            return "No courses found on the subjects page."
+            
+        output = [f"Found {len(courses)} courses vyučovaných na FIT:\n"]
+        for c in courses:
+            output.append(f"- [{c['code'].upper()}] {c['title']} - URL: {c['url']}")
+            
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error listing courses: {str(e)}"
+
 if __name__ == "__main__":
     # FastMCP server runs on stdin/stdout by default
     mcp.run()

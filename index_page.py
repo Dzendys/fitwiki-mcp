@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import re
+import sys
 import requests
 from fitwiki.config import ScraperConfig
 
@@ -33,9 +34,20 @@ def extract_from_index_sh() -> tuple:
 def main():
     config = ScraperConfig.from_env()
     
-    print("Parsing index.sh configuration...")
+    # Default fallback URL and cookies from index.sh
     url, cookie_str = extract_from_index_sh()
     
+    # Overwrite target URL if CLI argument is provided
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].strip()
+        if arg.startswith("http"):
+            url = arg
+        else:
+            url = f"{config.base_url}/škola/předměty/{arg.lower()}"
+            print(f"Targeting course code: {arg.upper()}")
+    else:
+        print("No subject argument provided, reading target from index.sh...")
+        
     print(f"Target URL: {url}")
     if cookie_str:
         print("Cookies loaded from index.sh.")
