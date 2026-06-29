@@ -223,31 +223,33 @@ class FitWikiPDFCompiler:
         }}
         
         /* Code blocks */
-        pre, code {{
+        pre {{
             font-family: {font_family_mono};
-            font-size: 9pt;
+            font-size: 8.5pt;
+            background-color: #f7f7f7;
+            border: 0.5pt solid #dddddd;
+            padding: 8pt 10pt;
+            margin: 12pt 0;
+            white-space: pre;
+            page-break-inside: avoid;
         }}
         
         code {{
+            font-family: {font_family_mono};
+            font-size: 8.5pt;
             background-color: #f7f7f7;
             padding: 1pt 3pt;
             border-radius: 2pt;
             border: 0.2pt solid #dddddd;
         }}
         
-        pre {{
-            background-color: #f7f7f7;
-            border: 0.5pt solid #dddddd;
-            padding: 8pt 10pt;
-            margin: 12pt 0;
-            white-space: pre-wrap;
-            page-break-inside: avoid;
-        }}
-        
         pre code {{
+            font-family: {font_family_mono};
+            font-size: 8.5pt;
             background-color: transparent;
             border: none;
             padding: 0;
+            white-space: pre;
         }}
         
         /* Images */
