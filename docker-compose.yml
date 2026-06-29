@@ -1,6 +1,5 @@
 services:
   fitwiki-mcp:
-    build: .
     image: ghcr.io/dzendys/fitwiki-mcp:latest
     container_name: fitwiki-mcp
     restart: unless-stopped
