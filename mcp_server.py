@@ -97,7 +97,9 @@ def scrape_page(url: str, category: str, title: str, cookies: str = "") -> str:
     
     try:
         md_path = scraper.scrape_page(url, category, title)
-        return f"Success! Saved Markdown to: {md_path}"
+        with open(md_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return f"Success! Saved Markdown to: {md_path}\n\n--- Content ---\n\n{content}"
     except Exception as e:
         return f"Error scraping page: {str(e)}"
 
@@ -284,18 +286,67 @@ def download_page(url: str, category: str, title: str, cookies: str = "") -> str
         success = compiler.compile_file(md_path, pdf_path)
         
         if success:
+            with open(md_path, 'r', encoding='utf-8') as f:
+                content = f.read()
             return (
                 f"Success! Page downloaded and compiled:\n"
                 f"- Markdown path: {md_path}\n"
-                f"- PDF path: {pdf_path}"
+                f"- PDF path: {pdf_path}\n\n"
+                f"--- Content ---\n\n{content}"
             )
         else:
+            with open(md_path, 'r', encoding='utf-8') as f:
+                content = f.read()
             return (
-                f"Page scraped to Markdown: {md_path}\n"
-                f"Warning: PDF compilation failed (check log for details)."
+                f"Page scraped to Markdown (PDF compilation failed): {md_path}\n\n"
+                f"--- Content ---\n\n{content}"
             )
     except Exception as e:
         return f"Error processing page: {str(e)}"
+
+@mcp.tool()
+def read_saved_file(path: str) -> str:
+    """
+    Reads a previously saved Markdown file and returns its contents.
+    Useful when you've scraped a page but the content wasn't fully returned,
+    or to re-read a file from a previous session.
+
+    Args:
+        path: Absolute or relative path to the Markdown file (e.g. 'markdown_output/bi-osy/zkouska/example.md').
+    """
+    try:
+        # Resolve relative paths against the project root
+        if not os.path.isabs(path):
+            base = os.path.dirname(os.path.abspath(__file__))
+            path = os.path.join(base, path)
+        with open(path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return f"--- {path} ---\n\n{content}"
+    except Exception as e:
+        return f"Error reading file: {str(e)}"
+
+@mcp.resource("markdown://{path}")
+def markdown_resource(path: str) -> str:
+    """
+    Reads a saved Markdown file by path. The path should be relative to the project root
+    (e.g. 'markdown_output/bi-osy/zkouska/example.md').
+
+    Args:
+        path: Relative path to the Markdown file.
+    """
+    try:
+        base = os.path.dirname(os.path.abspath(__file__))
+        full_path = os.path.join(base, path)
+        # Safety: prevent directory traversal
+        full_path = os.path.normpath(full_path)
+        if not full_path.startswith(os.path.normpath(base)):
+            return "Access denied: path outside project directory."
+        with open(full_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return f"File not found: {path}"
+    except Exception as e:
+        return f"Error reading file: {str(e)}"
 
 @mcp.tool()
 def compile_category_pdfs(category: str) -> str:
