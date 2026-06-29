@@ -86,8 +86,8 @@ Restart the client after saving. For AGY, verify with `/mcp` in chat.
 
 ### Transports
 
-- **stdio** (default) – used by the config above. The client spawns the server as a subprocess.
-- **SSE** – for Docker or remote setups. Set `MCP_TRANSPORT=sse` and point the client to `http://host:8000/sse`.
+- **stdio** (default) – the client spawns the server as a subprocess. Use for Claude Desktop, AGY, OpenCode.
+- **streamable-http** – for Docker or remote setups. Set `MCP_TRANSPORT=streamable-http` and point the client to `http://host:8000/mcp`.
 
 ---
 

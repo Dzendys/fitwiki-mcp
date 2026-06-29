@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY fitwiki/ fitwiki/
 COPY mcp_server.py .
 
-ENV MCP_TRANSPORT=sse
+ENV MCP_TRANSPORT=streamable-http
 ENV MCP_HOST=0.0.0.0
 ENV MCP_PORT=8000
 
