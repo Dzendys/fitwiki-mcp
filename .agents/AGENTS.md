@@ -15,15 +15,15 @@ These instructions guide how AI agents should interact with the user and the cod
 
 ## 2. Directory Structure
 - `cache/`: Local HTML files cache.
-- `markdown_output/`: Converted markdown files grouped by category (e.g., `markdown_output/zkouska/`).
-- `pdfs/`: Compiled PDF files grouped by category (e.g., `pdfs/zkouska/`).
+- `markdown_output/<course_code>/<category>/`: Converted markdown files, grouped first by course code (e.g., `bi-osy`), then by category (e.g., `zkouska`). Example: `markdown_output/bi-osy/zkouska/`.
+- `pdfs/<course_code>/<category>/`: Compiled PDF files using the same nested structure. Example: `pdfs/bi-osy/zkouska/`.
 
 ## 3. Resolving Course & Exam Queries
 If the user asks about a course or exam questions (e.g., "Co bylo na zkoušce z BI-PA1?"):
-1. **Identify the Course Code:** E.g., `BI-PA1` or `bi-pai`.
+1. **Identify the Course Code:** E.g., `BI-PA1` → `bi-pa1`, `bi-pai` → `bi-pai`.
 2. **List Sections:** Call `list_course_sections` with the course code.
 3. **List Pages in Section:** Call `list_section_pages` for the relevant section (typically `zkouska` for exams).
-4. **Locate Downloaded Markdown:** Check if the corresponding `.md` file is already in `markdown_output/<category>/`.
+4. **Locate Downloaded Markdown:** Check if the corresponding `.md` file is already in `markdown_output/<course_code>/<category>/`.
    - If yes: read it using `view_file` to answer the question directly.
    - If no: call `download_page` for the term to fetch the content, and then read the generated Markdown file to answer the user.
 5. **LaTeX Math:** When explaining math formulas from the wiki, refer to the LaTeX formulas embedded in the Markdown image alt attributes (e.g., `![formula](...)`).
@@ -31,9 +31,20 @@ If the user asks about a course or exam questions (e.g., "Co bylo na zkoušce z 
 7. **Proactively offer completeness:** When a user requests downloading or discussing a specific exam term, check if there are other terms in the same section (using `list_section_pages`). Proactively offer to download or list the other related terms so the user has the complete set of study materials.
 
 ## 4. Fallback if MCP Tools are Missing
-If the MCP tools (such as `list_course_sections`, `download_page`, etc.) are NOT present in your active tool declaration list:
-1. **Notify the User:** Inform the user that the `fitwiki` MCP server is not yet configured in their client settings, and suggest they copy the configuration block from the generated `scratch/mcp_config.json` to their `~/.gemini/antigravity-cli/settings.json` (or Claude's config) as described in `README.md`.
-2. **Use CLI Scripts Fallback:** To answer the user's current query immediately, fall back to running the CLI scripts directly:
-   - Run `./venv/bin/python scraper.py <course_code>` via shell to download/update files.
-   - Read the resulting Markdown files in `markdown_output/` using `view_file` to extract answers.
-   - Do NOT spend multiple turns inspecting python source files (like `mcp_server.py`) or running environment audits (like `pip list`). Just use the CLI scraper script directly.
+**How to detect:** If `list_course_sections`, `download_page`, and similar tools are NOT listed in your available tools — the MCP server is not running. Do NOT try to figure out why by reading source files.
+
+If the MCP tools are NOT present in your active tool declaration list, follow this exact sequence:
+
+**Step 1 — Immediately notify the user** (one sentence max):
+> "The `fitwiki` MCP server is not running. To enable it, add the config from `~/.gemini/antigravity-cli/mcp_config.json` to your client settings and restart."
+
+**Step 2 — Answer immediately using the CLI fallback** (do NOT explore the codebase first):
+- Check if `markdown_output/<course_code>/` already has the relevant `.md` files using `list_dir`.
+- If files exist: read them with `view_file` and answer the user directly.
+- If files are missing: run `echo "all" | ./venv/bin/python scraper.py <course_code>` via Bash to download them, then read the resulting markdown.
+
+**STRICT PROHIBITIONS in fallback mode:**
+- Do NOT read `README.md`, `scraper.py`, `index_page.py`, `mcp_server.py`, or any other `.py` file.
+- Do NOT run `pip list`, `find`, or any other environment audit command.
+- Do NOT list the root workspace directory before acting.
+- Go directly to Step 2 without any exploration.
