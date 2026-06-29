@@ -273,11 +273,11 @@ def download_page(url: str, category: str, title: str, cookies: str = "") -> str
         # 1. Scrape to Markdown
         md_path = scraper.scrape_page(url, category, title)
         
-        # 2. Compile to PDF
-        pdf_filename = os.path.basename(md_path).replace('.md', '.pdf')
-        category_pdf_dir = os.path.join(config.pdf_dir, category)
-        os.makedirs(category_pdf_dir, exist_ok=True)
-        pdf_path = os.path.join(category_pdf_dir, pdf_filename)
+        # 2. Compile to PDF (preserving the same nested folder structure under pdf_dir)
+        rel_md_path = os.path.relpath(md_path, config.markdown_dir)
+        pdf_rel_path = rel_md_path.replace('.md', '.pdf')
+        pdf_path = os.path.join(config.pdf_dir, pdf_rel_path)
+        os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
         
         success = compiler.compile_file(md_path, pdf_path)
         

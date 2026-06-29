@@ -13,20 +13,23 @@ def main():
         
     compiler = FitWikiPDFCompiler(config)
     
-    # Discover categories in markdown_output
-    categories = [
-        d for d in os.listdir(config.markdown_dir)
-        if os.path.isdir(os.path.join(config.markdown_dir, d))
-    ]
-    
-    if not categories:
+    # Discover unique categories across all course directories
+    unique_categories = set()
+    for course_code in os.listdir(config.markdown_dir):
+        course_path = os.path.join(config.markdown_dir, course_code)
+        if os.path.isdir(course_path):
+            for d in os.listdir(course_path):
+                if os.path.isdir(os.path.join(course_path, d)) and d != 'images':
+                    unique_categories.add(d)
+                    
+    if not unique_categories:
         print(f"No categories found in '{config.markdown_dir}'. Make sure pages have been scraped.")
         sys.exit(0)
         
-    print(f"Discovered categories for PDF compilation: {', '.join(categories)}")
+    print(f"Discovered categories for PDF compilation: {', '.join(sorted(unique_categories))}")
     
     total_compiled = 0
-    for cat in categories:
+    for cat in sorted(unique_categories):
         print(f"\n--- Compiling Category: {cat} ---")
         compiled_paths = compiler.compile_category(cat)
         total_compiled += len(compiled_paths)
