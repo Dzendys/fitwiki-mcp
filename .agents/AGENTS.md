@@ -3,7 +3,7 @@
 These instructions guide how AI agents should interact with the user and the codebase when discussing subjects, exams, or test materials in this workspace.
 
 ## 1. Context and Tools
-- This workspace contains a Fit-Wiki scraper and PDF compiler, integrated as an MCP server in [mcp_server.py](file:///home/dzendys_/Downloads/fitwiki/mcp_server.py).
+- This workspace contains a Fit-Wiki scraper and PDF compiler, integrated as an MCP server in [mcp_server.py](mcp_server.py).
 - Use the MCP tools (`list_courses`, `list_course_sections`, `list_section_pages`, `download_page`, `compile_pdf`, `compile_category_pdfs`) whenever the user asks about courses, topics, exam terms, or test materials.
 
 ## 2. Interactive Workflow
