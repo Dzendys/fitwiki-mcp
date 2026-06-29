@@ -74,6 +74,8 @@ Follow this workflow to scrape and compile a course manually via CLI:
 
 To connect this workspace as a tool provider for LLM clients, add the server configuration using one of the configurations below.
 
+> **Authentication note:** The MCP server reads cookies from the `.env` file in the project directory (recommended). If you prefer to pass them directly via the client config, use the `env` block shown below. Either approach works — you do not need both.
+
 ### For Claude Desktop
 Add the server configuration to your `claude_desktop_config.json` (usually located at `~/.config/Claude/claude_desktop_config.json` on Linux):
 
@@ -99,14 +101,28 @@ Add the server configuration to your Antigravity MCP configuration file (`~/.gem
   "mcpServers": {
     "fitwiki": {
       "command": "/path/to/fitwiki/venv/bin/python",
-      "args": ["/path/to/fitwiki/mcp_server.py"],
-      "env": {
-        "FITWIKI_COOKIES": "DokuWiki=your_session_id; DW7fa...=your_auth_token"
-      }
+      "args": ["/path/to/fitwiki/mcp_server.py"]
     }
   }
 }
 ```
+
+> If you have not set up a `.env` file, pass cookies directly:
+> ```json
+> {
+>   "mcpServers": {
+>     "fitwiki": {
+>       "command": "/path/to/fitwiki/venv/bin/python",
+>       "args": ["/path/to/fitwiki/mcp_server.py"],
+>       "env": {
+>         "FITWIKI_COOKIES": "DokuWiki=your_session_id; DW7fa...=your_auth_token"
+>       }
+>     }
+>   }
+> }
+> ```
+
+After saving the file, **restart the Antigravity CLI** (`agy`) for the MCP server to be picked up. You can verify it loaded correctly by running `/mcp` in the chat.
 
 ### Exposed MCP Tools
 
