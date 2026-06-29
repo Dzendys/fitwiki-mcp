@@ -325,29 +325,6 @@ def read_saved_file(path: str) -> str:
     except Exception as e:
         return f"Error reading file: {str(e)}"
 
-@mcp.resource("markdown://{path}")
-def markdown_resource(path: str) -> str:
-    """
-    Reads a saved Markdown file by path. The path should be relative to the project root
-    (e.g. 'markdown_output/bi-osy/zkouska/example.md').
-
-    Args:
-        path: Relative path to the Markdown file.
-    """
-    try:
-        base = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(base, path)
-        # Safety: prevent directory traversal
-        full_path = os.path.normpath(full_path)
-        if not full_path.startswith(os.path.normpath(base)):
-            return "Access denied: path outside project directory."
-        with open(full_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        return f"File not found: {path}"
-    except Exception as e:
-        return f"Error reading file: {str(e)}"
-
 @mcp.tool()
 def compile_category_pdfs(category: str) -> str:
     """

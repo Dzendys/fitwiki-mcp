@@ -121,8 +121,4 @@ The Docker image is built automatically on push (see `.github/workflows/docker-b
 - `scrape_course` – Download all pages in selected categories for a course.
 - `download_page` – Scrape a page to Markdown, compile to PDF, and return the content.
 
-### Resources
-
-- `markdown://{path}` – Read a saved Markdown file relative to the project root (e.g. `markdown_output/bi-osy/zkouska/example.md`).
-
 
