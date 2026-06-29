@@ -94,7 +94,14 @@ Add the server configuration to your `claude_desktop_config.json` (usually locat
 ```
 
 ### For Google Antigravity (AGY)
-Add the server configuration to your Antigravity MCP configuration file (`~/.gemini/antigravity-cli/mcp_config.json`):
+The configuration file path depends on which surface you use:
+
+| Surface | Config file |
+|---|---|
+| **AGY CLI** (`agy` terminal) | `~/.gemini/antigravity-cli/mcp_config.json` |
+| **Antigravity IDE / 2.0** | `~/.gemini/config/mcp_config.json` |
+
+Add this to the appropriate file:
 
 ```json
 {
