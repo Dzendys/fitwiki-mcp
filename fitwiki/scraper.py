@@ -197,6 +197,27 @@ class FitWikiScraper:
             
         return True
 
+    def _get_full_res_image_url(self, url: str) -> str:
+        """
+        Transforms DokuWiki thumbnail/fetch URLs into their full-resolution counterparts
+        by removing resizing query parameters (like w, h, tok).
+        """
+        parsed = urllib.parse.urlparse(url)
+        query = urllib.parse.parse_qs(parsed.query)
+        
+        # Case 1: DokuWiki fetch.php utility
+        if 'fetch.php' in parsed.path:
+            if 'media' in query:
+                media_val = query['media'][0]
+                new_query = urllib.parse.urlencode({'media': media_val})
+                return urllib.parse.urlunparse(parsed._replace(query=new_query))
+        
+        # Case 2: Direct _media rewritten paths (e.g. /_media/path/to/file.png?w=400&tok=...)
+        elif '_media/' in parsed.path:
+            return urllib.parse.urlunparse(parsed._replace(query=''))
+                
+        return url
+
     def _download_image(self, img_url: str, category: str, page_slug: str) -> Optional[str]:
         """
         Downloads a media file/LaTeX equation and saves it locally.
@@ -209,6 +230,9 @@ class FitWikiScraper:
             full_img_url = img_url
         else:
             full_img_url = f"{self.config.base_url}/{img_url}"
+            
+        # Get full resolution URL by stripping thumbnail params
+        full_img_url = self._get_full_res_image_url(full_img_url)
             
         # Construct local path
         category_dir = os.path.join(self.config.markdown_dir, category)
