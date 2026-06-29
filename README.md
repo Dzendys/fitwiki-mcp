@@ -25,17 +25,17 @@ python3 -m venv venv
 The codebase is organized into a modular Python package `fitwiki` along with helper CLI scripts:
 
 - **`fitwiki/` (Python Package):**
-  - [config.py](file:///home/dzendys_/Downloads/fitwiki/fitwiki/config.py): `ScraperConfig` manages configuration loading from environment variables, `.env` files, or raw cookie strings.
-  - [scraper.py](file:///home/dzendys_/Downloads/fitwiki/fitwiki/scraper.py): `FitWikiScraper` handles subject index parsing, HTML caching, DOM sanitization (stripping navigation, modals, and comment sections), high-resolution image downloading, and Markdown generation. It automatically replaces DokuWiki LaTeX image tags with original text formulas in the image alt attributes to make math readable for LLMs.
-  - [pdf.py](file:///home/dzendys_/Downloads/fitwiki/fitwiki/pdf.py): `FitWikiPDFCompiler` processes tables and code blocks, registers Liberation Sans fonts, and compiles Markdown into clean, lightweight PDFs.
+  - [config.py](fitwiki/config.py): `ScraperConfig` manages configuration loading from environment variables, `.env` files, or raw cookie strings.
+  - [scraper.py](fitwiki/scraper.py): `FitWikiScraper` handles subject index parsing, HTML caching, DOM sanitization (stripping navigation, modals, and comment sections), high-resolution image downloading, and Markdown generation. It automatically replaces DokuWiki LaTeX image tags with original text formulas in the image alt attributes to make math readable for LLMs.
+  - [pdf.py](fitwiki/pdf.py): `FitWikiPDFCompiler` processes tables and code blocks, registers Liberation Sans fonts, and compiles Markdown into clean, lightweight PDFs.
 
 - **CLI Scripts:**
-  - [index_page.py](file:///home/dzendys_/Downloads/fitwiki/index_page.py): Downloads the course index page to `index-page.html` using the configured authentication.
-  - [scraper.py](file:///home/dzendys_/Downloads/fitwiki/scraper.py): Interactive console downloader. It prompts the user to select specific course categories and processes them into Markdown files.
-  - [convert_to_pdf.py](file:///home/dzendys_/Downloads/fitwiki/convert_to_pdf.py): Compiles all downloaded Markdown files in `markdown_output/` into PDF files in `pdfs/`.
+  - [index_page.py](index_page.py): Downloads the course index page to `index-page.html` using the configured authentication.
+  - [scraper.py](scraper.py): Interactive console downloader. It prompts the user to select specific course categories and processes them into Markdown files.
+  - [convert_to_pdf.py](convert_to_pdf.py): Compiles all downloaded Markdown files in `markdown_output/` into PDF files in `pdfs/`.
 
 - **MCP Server:**
-  - [mcp_server.py](file:///home/dzendys_/Downloads/fitwiki/mcp_server.py): Implements a FastMCP server, exposing the scraping and compilation features as tools for LLM integration.
+  - [mcp_server.py](mcp_server.py): Implements a FastMCP server, exposing the scraping and compilation features as tools for LLM integration.
 
 ---
 
@@ -81,8 +81,8 @@ Add the server configuration to your `claude_desktop_config.json` (usually locat
 {
   "mcpServers": {
     "fitwiki": {
-      "command": "/home/dzendys_/Downloads/fitwiki/venv/bin/python",
-      "args": ["/home/dzendys_/Downloads/fitwiki/mcp_server.py"],
+      "command": "/path/to/fitwiki/venv/bin/python",
+      "args": ["/path/to/fitwiki/mcp_server.py"],
       "env": {
         "FITWIKI_COOKIES": "DokuWiki=your_session_id; DW7fa...=your_auth_token"
       }
@@ -98,8 +98,8 @@ Add the server configuration to your Antigravity settings file (`~/.gemini/antig
 {
   "mcpServers": {
     "fitwiki": {
-      "command": "/home/dzendys_/Downloads/fitwiki/venv/bin/python",
-      "args": ["/home/dzendys_/Downloads/fitwiki/mcp_server.py"],
+      "command": "/path/to/fitwiki/venv/bin/python",
+      "args": ["/path/to/fitwiki/mcp_server.py"],
       "env": {
         "FITWIKI_COOKIES": "DokuWiki=your_session_id; DW7fa...=your_auth_token"
       }
