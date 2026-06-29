@@ -181,7 +181,9 @@ class FitWikiScraper:
             # DokuWiki action/share panels & tools
             '.bar', '.meta', '.docInfo', '.pagetools', '.usertools',
             '#dokuwiki__pagetools', '#dokuwiki__usertools',
-            '.dw-page-icons', '.shareon', '.share', '.share-buttons', '.social-share', '.share-icon'
+            '.dw-page-icons', '.shareon', '.share', '.share-buttons', '.social-share', '.share-icon',
+            # Helper dialog modals & close buttons
+            '.modal', '.close'
         ]
         
         for selector in selectors_to_remove:
