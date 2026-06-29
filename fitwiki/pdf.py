@@ -15,23 +15,27 @@ class FitWikiPDFCompiler:
         self.config = config
         os.makedirs(self.config.pdf_dir, exist_ok=True)
         
-        # Look for DejaVu Sans fonts in standard Linux locations
-        self.font_paths = self._find_dejavu_fonts()
+        # Look for Liberation fonts in standard Linux locations to support italic/bold/regular styles properly
+        self.font_paths = self._find_liberation_fonts()
 
-    def _find_dejavu_fonts(self) -> dict:
+    def _find_liberation_fonts(self) -> dict:
         """
-        Finds DejaVu Sans fonts on the system.
+        Finds Liberation Sans and Liberation Mono fonts on the system.
         """
         standard_dirs = [
-            "/usr/share/fonts/truetype/dejavu",
-            "/usr/share/fonts/dejavu",
-            "/usr/share/fonts/TTF"
+            "/usr/share/fonts/truetype/liberation",
+            "/usr/share/fonts/liberation"
         ]
         
         fonts = {
-            'regular': 'DejaVuSans.ttf',
-            'bold': 'DejaVuSans-Bold.ttf',
-            'mono': 'DejaVuSansMono.ttf'
+            'regular': 'LiberationSans-Regular.ttf',
+            'bold': 'LiberationSans-Bold.ttf',
+            'italic': 'LiberationSans-Italic.ttf',
+            'bold_italic': 'LiberationSans-BoldItalic.ttf',
+            'mono': 'LiberationMono-Regular.ttf',
+            'mono_bold': 'LiberationMono-Bold.ttf',
+            'mono_italic': 'LiberationMono-Italic.ttf',
+            'mono_bold_italic': 'LiberationMono-BoldItalic.ttf'
         }
         
         found_fonts = {}
@@ -44,43 +48,88 @@ class FitWikiPDFCompiler:
                     found = True
                     break
             if not found:
-                # Fallback to local workspace or search
-                found_fonts[style] = filename  # xhtml2pdf will try to find it in path or failback
+                # Fallback to local search / filename
+                found_fonts[style] = filename
                 
         return found_fonts
 
     def get_html_template(self, content_html: str) -> str:
         """
-        Wraps content in an HTML template with styles and Czech fonts registered.
+        Wraps content in an HTML template with Liberation fonts registered.
         """
-        # Build font face declarations
         font_styles = []
+        
+        # Register Liberation Sans styles
         if os.path.exists(self.font_paths['regular']):
             font_styles.append(f"""
                 @font-face {{
-                    font-family: 'DejaVu';
+                    font-family: 'LiberationSans';
                     src: url('{self.font_paths['regular']}');
                 }}
             """)
         if os.path.exists(self.font_paths['bold']):
             font_styles.append(f"""
                 @font-face {{
-                    font-family: 'DejaVu';
+                    font-family: 'LiberationSans';
                     src: url('{self.font_paths['bold']}');
                     font-weight: bold;
                 }}
             """)
+        if os.path.exists(self.font_paths['italic']):
+            font_styles.append(f"""
+                @font-face {{
+                    font-family: 'LiberationSans';
+                    src: url('{self.font_paths['italic']}');
+                    font-style: italic;
+                }}
+            """)
+        if os.path.exists(self.font_paths['bold_italic']):
+            font_styles.append(f"""
+                @font-face {{
+                    font-family: 'LiberationSans';
+                    src: url('{self.font_paths['bold_italic']}');
+                    font-weight: bold;
+                    font-style: italic;
+                }}
+            """)
+            
+        # Register Liberation Mono styles
         if os.path.exists(self.font_paths['mono']):
             font_styles.append(f"""
                 @font-face {{
-                    font-family: 'DejaVuMono';
+                    font-family: 'LiberationMono';
                     src: url('{self.font_paths['mono']}');
+                }}
+            """)
+        if os.path.exists(self.font_paths['mono_bold']):
+            font_styles.append(f"""
+                @font-face {{
+                    font-family: 'LiberationMono';
+                    src: url('{self.font_paths['mono_bold']}');
+                    font-weight: bold;
+                }}
+            """)
+        if os.path.exists(self.font_paths['mono_italic']):
+            font_styles.append(f"""
+                @font-face {{
+                    font-family: 'LiberationMono';
+                    src: url('{self.font_paths['mono_italic']}');
+                    font-style: italic;
+                }}
+            """)
+        if os.path.exists(self.font_paths['mono_bold_italic']):
+            font_styles.append(f"""
+                @font-face {{
+                    font-family: 'LiberationMono';
+                    src: url('{self.font_paths['mono_bold_italic']}');
+                    font-weight: bold;
+                    font-style: italic;
                 }}
             """)
             
         font_declarations = "\n".join(font_styles)
-        font_family_main = "'DejaVu', sans-serif" if font_styles else "sans-serif"
-        font_family_mono = "'DejaVuMono', monospace" if font_styles else "monospace"
+        font_family_main = "'LiberationSans', sans-serif" if font_styles else "sans-serif"
+        font_family_mono = "'LiberationMono', monospace" if font_styles else "monospace"
 
         return f"""<!DOCTYPE html>
 <html>
