@@ -5,7 +5,9 @@ These instructions guide how AI agents should interact with the user and the cod
 ## 1. Context and Tools
 - This workspace contains a Fit-Wiki scraper and PDF compiler, integrated as an MCP server.
 - **CRITICAL:** Do NOT read, parse, or analyze the python files (e.g., `mcp_server.py`, `scraper.py`, `index_page.py`, `fitwiki/scraper.py`, `fitwiki/pdf.py`) to understand how to scrape or compile. The workspace has custom pre-registered MCP tools. Use them directly.
-- **Exposed MCP Tools:**
+- **CRITICAL:** MCP tools are **native agent tools** — they appear in your tool list just like `view_file` or `list_dir`. Call them directly. Do NOT try to invoke them via Bash, `run_command`, or any shell command. Do NOT try `./venv/bin/python -m fitwiki ...` or similar.
+- **How to detect if MCP is available:** Check your active tool list. If you see `list_course_sections`, `download_page`, etc. as callable tools — use them. If they are absent from your tool list — follow Section 4 (Fallback).
+- **Exposed MCP Tools** (callable as native agent tools, not shell commands):
   - `list_courses`: Lists all subjects and courses available on the Fit-Wiki.
   - `list_course_sections`: Lists sections and categories (e.g., 'zkouska', 'test1') for a given subject.
   - `list_section_pages`: Lists individual pages and exam terms in specific course sections.
