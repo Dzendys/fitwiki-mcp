@@ -355,13 +355,47 @@ class FitWikiScraper:
         # Sanitize HTML
         clean_soup = self.sanitize_html(raw_html)
         
-        # Process and download images
+        # Attempt to fetch raw wikitext to align LaTeX equations as text
+        latex_formulas = []
+        try:
+            wikitext_url = url + ("&" if "?" in url else "?") + "do=export_raw"
+            wikitext_response = requests.get(
+                wikitext_url,
+                headers=self.config.headers,
+                cookies=self.config.cookies
+            )
+            if wikitext_response.status_code == 200:
+                # Find all <latex>...</latex> blocks
+                latex_formulas = re.findall(r'<latex.*?>(.*?)</latex>', wikitext_response.text, re.DOTALL)
+                latex_formulas = [f.strip() for f in latex_formulas]
+        except Exception as e:
+            print(f"Warning: Could not fetch wikitext for LaTeX extraction: {e}")
+        
+        # Process and download images / substitute LaTeX formulas
+        latex_idx = 0
         for img in clean_soup.find_all('img'):
             src = img.get('src')
             if not src:
                 continue
                 
-            if self._should_download_image(src):
+            src_lower = src.lower()
+            is_latex = 'latex.php' in src_lower or 'media=latex:' in src_lower or 'media=latex%3a' in src_lower
+            
+            if is_latex:
+                if latex_idx < len(latex_formulas):
+                    # Replace image tag with the original LaTeX text formula
+                    formula = latex_formulas[latex_idx]
+                    latex_idx += 1
+                    # Wrap in standard Markdown math syntax
+                    img.replace_with(f" ${formula}$ ")
+                else:
+                    # Fallback to downloading as image if count mismatched
+                    local_rel_path = self._download_image(src, category, page_slug)
+                    if local_rel_path:
+                        img['src'] = local_rel_path
+                    else:
+                        img.decompose()
+            elif self._should_download_image(src):
                 local_rel_path = self._download_image(src, category, page_slug)
                 if local_rel_path:
                     # Update img src to relative local path
