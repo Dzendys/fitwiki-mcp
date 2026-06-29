@@ -212,6 +212,30 @@ class FitWikiScraper:
                 
         return clean_soup
 
+    def _extract_course_code(self, url: str) -> str:
+        """
+        Extracts the course code (e.g., 'bi-osy') from the Fit-Wiki URL.
+        """
+        parsed = urllib.parse.urlparse(url)
+        path = parsed.path
+        parts = [p for p in path.split('/') if p]
+        
+        for i, part in enumerate(parts):
+            decoded_part = urllib.parse.unquote(part).lower()
+            # Remove diacritics
+            decoded_part = ''.join(
+                c for c in unicodedata.normalize('NFD', decoded_part)
+                if unicodedata.category(c) != 'Mn'
+            )
+            if decoded_part in ['predmety', 'subjects'] and i + 1 < len(parts):
+                next_part = urllib.parse.unquote(parts[i+1]).lower()
+                # Split by underscore or colon to extract the root namespace (course code)
+                course_code = next_part.split('_')[0].split(':')[0]
+                return course_code
+                
+        # Fallback if not found in standard subjects namespace
+        return "ostatni"
+
     def _should_download_image(self, src: str) -> bool:
         """
         Determines if an image is content (LaTeX or uploaded media) or just interface layout.
@@ -255,7 +279,7 @@ class FitWikiScraper:
                 
         return url
 
-    def _download_image(self, img_url: str, category: str, page_slug: str) -> Optional[str]:
+    def _download_image(self, img_url: str, course_code: str, category: str, page_slug: str) -> Optional[str]:
         """
         Downloads a media file/LaTeX equation and saves it locally.
         Returns the relative path to be used in Markdown.
@@ -272,7 +296,7 @@ class FitWikiScraper:
         full_img_url = self._get_full_res_image_url(full_img_url)
             
         # Construct local path
-        category_dir = os.path.join(self.config.markdown_dir, category)
+        category_dir = os.path.join(self.config.markdown_dir, course_code, category)
         images_dir = os.path.join(category_dir, 'images', page_slug)
         os.makedirs(images_dir, exist_ok=True)
         
@@ -381,6 +405,9 @@ class FitWikiScraper:
         except Exception as e:
             print(f"Warning: Could not fetch wikitext for LaTeX extraction: {e}")
         
+        # Extract course code to separate output directories by subject
+        course_code = self._extract_course_code(url)
+        
         # Process and download images / substitute LaTeX formulas
         latex_idx = 0
         for img in clean_soup.find_all('img'):
@@ -401,13 +428,13 @@ class FitWikiScraper:
                     img['alt'] = clean_formula
                     
                 # Download the image so the PDF compiler can render the formula
-                local_rel_path = self._download_image(src, category, page_slug)
+                local_rel_path = self._download_image(src, course_code, category, page_slug)
                 if local_rel_path:
                     img['src'] = local_rel_path
                 else:
                     img.decompose()
             elif self._should_download_image(src):
-                local_rel_path = self._download_image(src, category, page_slug)
+                local_rel_path = self._download_image(src, course_code, category, page_slug)
                 if local_rel_path:
                     # Update img src to relative local path
                     img['src'] = local_rel_path
@@ -431,7 +458,7 @@ class FitWikiScraper:
         full_md_content = f"# {page_title}\n\nSource: [{url}]({url})\n\n---\n\n{md_content}"
         
         # Save to category markdown folder
-        category_dir = os.path.join(self.config.markdown_dir, category)
+        category_dir = os.path.join(self.config.markdown_dir, course_code, category)
         os.makedirs(category_dir, exist_ok=True)
         
         md_filename = f"{page_slug}.md"

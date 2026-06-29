@@ -326,27 +326,34 @@ class FitWikiPDFCompiler:
 
     def compile_category(self, category: str) -> List[str]:
         """
-        Compiles all Markdown files within a category folder.
+        Compiles all Markdown files within a category folder across all courses.
         Returns a list of created PDF paths.
         """
-        category_md_dir = os.path.join(self.config.markdown_dir, category)
-        if not os.path.exists(category_md_dir):
-            print(f"Warning: Category folder {category_md_dir} does not exist.")
+        pdf_paths = []
+        if not os.path.exists(self.config.markdown_dir):
             return []
             
-        category_pdf_dir = os.path.join(self.config.pdf_dir, category)
-        os.makedirs(category_pdf_dir, exist_ok=True)
-        
-        pdf_paths = []
-        for file in os.listdir(category_md_dir):
-            if file.endswith('.md'):
-                md_path = os.path.join(category_md_dir, file)
-                pdf_filename = file.replace('.md', '.pdf')
-                pdf_path = os.path.join(category_pdf_dir, pdf_filename)
+        for course_code in os.listdir(self.config.markdown_dir):
+            course_md_dir = os.path.join(self.config.markdown_dir, course_code)
+            if not os.path.isdir(course_md_dir):
+                continue
                 
-                print(f"Compiling {file} to PDF...")
-                success = self.compile_file(md_path, pdf_path)
-                if success:
-                    pdf_paths.append(pdf_path)
+            category_md_dir = os.path.join(course_md_dir, category)
+            if not os.path.exists(category_md_dir):
+                continue
+                
+            category_pdf_dir = os.path.join(self.config.pdf_dir, course_code, category)
+            os.makedirs(category_pdf_dir, exist_ok=True)
+            
+            for file in os.listdir(category_md_dir):
+                if file.endswith('.md'):
+                    md_path = os.path.join(category_md_dir, file)
+                    pdf_filename = file.replace('.md', '.pdf')
+                    pdf_path = os.path.join(category_pdf_dir, pdf_filename)
                     
+                    print(f"Compiling {course_code}/{category}/{file} to PDF...")
+                    success = self.compile_file(md_path, pdf_path)
+                    if success:
+                        pdf_paths.append(pdf_path)
+                        
         return pdf_paths
