@@ -70,8 +70,9 @@ def _extract_course_code(url: str) -> str:
 @mcp.tool()
 def scrape_index(index_path_or_url: str, cookies: str = "") -> str:
     """
-    Parses a course index page (either a local HTML file or a live URL)
-    and lists all discovered pages, their URLs, and dynamically detected categories.
+    Parses a course index page and lists all discovered pages with their categories, URLs, and filenames.
+    Use this to explore what pages exist before scraping. Each entry shows the file path for read_saved_file()
+    and the URL + category for scrape_page() / download_page().
 
     Args:
         index_path_or_url: Path to local HTML (e.g. 'index-page.html') or full URL.
@@ -123,13 +124,15 @@ def scrape_index(index_path_or_url: str, cookies: str = "") -> str:
 @mcp.tool()
 def scrape_page(url: str, category: str, title: str, cookies: str = "") -> str:
     """
-    Scrapes a single DokuWiki page. Extracts content, downloads LaTeX formulas and images,
-    sanitizes layout, converts to Markdown, and saves to file.
+    Scrapes a single DokuWiki page, converts to Markdown, saves to disk, and returns the full content.
+    Use this after list_section_pages() to download a specific exam term or test variant.
+    The returned content includes the markdown text so you can read it immediately.
+    If you need the content again later, use read_saved_file() with the path shown in the response.
 
     Args:
-        url: URL of the page to scrape.
-        category: Target category directory for storing output (e.g., 'zkouska', 'test1').
-        title: Title of the page.
+        url: URL of the page to scrape (get from list_section_pages or scrape_index output).
+        category: Target category directory (e.g. 'zkouska', 'test1', 'ukoly').
+        title: Title of the page (shown in listings).
         cookies: DokuWiki session cookies. Optional.
     """
     config = _get_config(cookies)
@@ -146,12 +149,14 @@ def scrape_page(url: str, category: str, title: str, cookies: str = "") -> str:
 @mcp.tool()
 def scrape_course(index_path_or_url: str, categories: str = "all", cookies: str = "") -> str:
     """
-    Runs the full scraping pipeline. Extracts index, filters by category list,
-    downloads and converts all matching pages, and caches raw HTML files.
+    Downloads ALL pages in selected categories for a course in one batch.
+    Faster than scraping one by one. Use after list_course_sections() to see available categories.
+    Each page is saved to markdown_output/<course_code>/<category>/<slug>.md.
+    Use read_saved_file() to read individual files afterward.
 
     Args:
-        index_path_or_url: Path to local HTML or URL to scrape index from.
-        categories: Comma-separated list of categories to scrape (e.g., 'zkouska,test1') or 'all'.
+        index_path_or_url: Course URL or code (e.g. 'bi-pa2' or full URL).
+        categories: Comma-separated list of categories (e.g. 'zkouska,test1') or 'all'.
         cookies: DokuWiki session cookies. Optional.
     """
     config = _get_config(cookies)
@@ -242,7 +247,9 @@ def compile_pdf(markdown_path: str, pdf_path: str) -> str:
 @mcp.tool()
 def list_course_sections(course_code_or_url: str, cookies: str = "") -> str:
     """
-    Lists all material sections/categories (e.g. 'zkouska', 'test1') for a given subject.
+    SECOND STEP: Lists all material sections/categories (e.g. 'zkouska', 'test1', 'ukoly') for a given subject.
+    Call this after list_courses() to see what material categories exist for a course.
+    Then use list_section_pages() to see individual pages in a category, or scrape_course() to download all.
 
     Args:
         course_code_or_url: Subject code (e.g. 'bi-osy') or full course index URL.
@@ -263,7 +270,12 @@ def list_course_sections(course_code_or_url: str, cookies: str = "") -> str:
         for s in sorted(sections):
             count = sum(1 for l in links if l['category'] == s)
             output.append(f"- {s} ({count} pages/terms)")
-            
+
+        output.append("\nTo see individual pages in a section, call:")
+        output.append(f"  list_section_pages(\"{course_code_or_url}\", \"section1,section2\")")
+        output.append("Or download everything in one go:")
+        output.append(f"  scrape_course(\"{course_code_or_url}\", \"section1,section2\")")
+
         return "\n".join(output)
     except Exception as e:
         return f"Error listing sections: {str(e)}"
@@ -271,7 +283,10 @@ def list_course_sections(course_code_or_url: str, cookies: str = "") -> str:
 @mcp.tool()
 def list_section_pages(course_code_or_url: str, sections: str, cookies: str = "") -> str:
     """
-    Lists all pages (exam terms, test variants) within specific sections of a course.
+    THIRD STEP: Lists all pages (exam terms, test variants, homework assignments) within specific sections of a course.
+    Call this after list_course_sections() to see individual scrapable pages.
+    Each result includes the exact file path for read_saved_file().
+    To download content, use scrape_page(url, category, title) or download_page(url, category, title) with the shown URL and category.
 
     Args:
         course_code_or_url: Subject code (e.g. 'bi-osy') or course index URL.
@@ -298,13 +313,17 @@ def list_section_pages(course_code_or_url: str, sections: str, cookies: str = ""
         
         if not filtered_links:
             return f"No pages found in sections: {sections}."
-            
+
         output = [f"Found {len(filtered_links)} pages/terms in sections [{sections}] of {course_code_or_url.upper()}:\n"]
         for i, l in enumerate(filtered_links, 1):
             slug = _page_slug(l['url'])
             md_path = f"markdown_output/{course_code}/{l['category']}/{slug}.md"
             output.append(f"{i}. [{l['category']}] {l['title']} - {md_path} - URL: {l['url']}")
-            
+
+        output.append("\nTo download a page, call:")
+        output.append("  scrape_page(url, \"category\", \"title\")  # returns markdown content directly")
+        output.append("  download_page(url, \"category\", \"title\")  # returns content + compiles PDF")
+
         return "\n".join(output)
     except Exception as e:
         return f"Error listing section pages: {str(e)}"
@@ -312,11 +331,12 @@ def list_section_pages(course_code_or_url: str, sections: str, cookies: str = ""
 @mcp.tool()
 def download_page(url: str, category: str, title: str, cookies: str = "") -> str:
     """
-    Downloads a single page, converts it to Markdown, and compiles it to PDF.
-    Returns paths to both files.
+    Scrapes a page to Markdown, compiles it to PDF, and returns both paths plus the markdown content.
+    Same as scrape_page() but also generates a PDF. Use when you want a printable document.
+    Use read_saved_file() with the markdown path to re-read the content later.
 
     Args:
-        url: URL of the page to download.
+        url: URL of the page to download (get from list_section_pages or scrape_index output).
         category: Category section (e.g. 'zkouska', 'test1') for storing files.
         title: Title of the page.
         cookies: DokuWiki session cookies. Optional.
@@ -361,12 +381,11 @@ import glob
 @mcp.tool()
 def read_saved_file(path: str) -> str:
     """
-    Reads a previously saved Markdown file and returns its contents.
-    Useful when you've scraped a page but the content wasn't fully returned,
-    or to re-read a file from a previous session.
-
-    If the exact path is not found, lists available files in the parent directory
-    so the LLM can find the correct filename.
+    Re-reads a previously saved Markdown file and returns its contents.
+    Use this when you need to see content from a previous scrape again,
+    or when the user asks about content that was already downloaded.
+    The path should be the full relative path like 'markdown_output/bi-pa2/zkouska/slug.md'.
+    If the exact file is not found, this tool will list available .md files in the directory.
 
     Args:
         path: Absolute or relative path to the Markdown file (e.g. 'markdown_output/bi-osy/zkouska/example.md').
@@ -419,23 +438,28 @@ def compile_category_pdfs(category: str) -> str:
 @mcp.tool()
 def list_courses(cookies: str = "") -> str:
     """
-    Lists all subjects/courses taught at FIT. Fetches and parses the main subjects page on Fit-Wiki.
+    FIRST STEP: Lists all subjects/courses taught at FIT.
+    After getting the list, call list_course_sections("code") to see available material categories (e.g. "zkouska", "test1") for a specific course.
 
     Args:
         cookies: DokuWiki session cookies. Optional.
     """
     config = _get_config(cookies)
     scraper = FitWikiScraper(config)
-    
+
     try:
         courses = scraper.get_courses()
         if not courses:
             return "No courses found on the subjects page."
-            
-        output = [f"Found {len(courses)} courses vyučovaných na FIT:\n"]
+
+        output = [f"Found {len(courses)} courses:\n"]
         for c in courses:
-            output.append(f"- [{c['code'].upper()}] {c['title']} - URL: {c['url']}")
-            
+            output.append(f"- [{c['code'].upper()}] {c['title']}")
+
+        output.append("\nTo see exam terms, tests, and other materials for a course, call:")
+        output.append("  list_course_sections(\"<course_code>\")")
+        output.append("Then drill further with list_section_pages() or download all with scrape_course().")
+
         return "\n".join(output)
     except Exception as e:
         return f"Error listing courses: {str(e)}"
