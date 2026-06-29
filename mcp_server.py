@@ -51,6 +51,21 @@ def _page_slug(url: str) -> str:
     slug = re.sub(r'[^a-zA-Z0-9_\-]', '_', name)
     return slug if slug else 'index'
 
+def _extract_course_code(url: str) -> str:
+    """
+    Extracts the course code (e.g., 'bi-osy') from a Fit-Wiki URL.
+    """
+    parsed = urllib.parse.urlparse(url)
+    path = parsed.path
+    parts = [p for p in path.split('/') if p]
+    for i, part in enumerate(parts):
+        decoded = urllib.parse.unquote(part).lower()
+        nfd = unicodedata.normalize('NFD', decoded)
+        unaccented = "".join(c for c in nfd if unicodedata.category(c) != 'Mn')
+        if unaccented in ['predmety', 'subjects'] and i + 1 < len(parts):
+            return urllib.parse.unquote(parts[i+1]).lower().split('_')[0].split(':')[0]
+    return ""
+
 
 @mcp.tool()
 def scrape_index(index_path_or_url: str, cookies: str = "") -> str:
@@ -93,6 +108,12 @@ def scrape_index(index_path_or_url: str, cookies: str = "") -> str:
             for i, item in enumerate(items, 1):
                 slug = _page_slug(item['url'])
                 output.append(f"{i}. {item['title']} - File: {slug}.md - URL: {item['url']}")
+
+        # If the index was loaded from a URL, show how to reference files
+        if index_path_or_url.startswith("http"):
+            course_code = _extract_course_code(index_path_or_url)
+            if course_code:
+                output.append(f"\nUse `markdown_output/{course_code}/<category>/<file>.md` with `read_saved_file`.")
                 
         return "\n".join(output)
         
@@ -140,31 +161,33 @@ def scrape_course(index_path_or_url: str, categories: str = "all", cookies: str 
         if os.path.exists(index_path_or_url):
             with open(index_path_or_url, 'r', encoding='utf-8') as f:
                 html_content = f.read()
+            course_code = "unknown"
         else:
             html_content = scraper._get_page_html(index_path_or_url)
-            
+            course_code = _extract_course_code(index_path_or_url)
+
         links = scraper.scrape_index(html_content)
         if not links:
             return "No subpage links found in the index."
-            
+
         # Parse selected categories
         selected = []
         if categories.strip().lower() != "all":
             selected = [c.strip().lower() for c in categories.split(',')]
-            
+
         scraped_count = 0
         skipped_count = 0
         failed = []
-        
+
         results = ["Starting course scrape..."]
-        
+
         for l in links:
             cat = l['category']
             # Filter if categories list is set
             if selected and cat not in selected:
                 skipped_count += 1
                 continue
-                
+
             results.append(f"Scraping [{cat}] '{l['title']}'...")
             try:
                 scraper.scrape_page(l['url'], cat, l['title'])
@@ -172,19 +195,22 @@ def scrape_course(index_path_or_url: str, categories: str = "all", cookies: str 
             except Exception as e:
                 failed.append((l['title'], str(e)))
                 results.append(f"  FAILED: {str(e)}")
-                
+
         summary = [
             "\nScrape Finished!",
             f"Successfully scraped: {scraped_count}",
             f"Skipped: {skipped_count}",
             f"Failed: {len(failed)}"
         ]
-        
+
         if failed:
             summary.append("\nFailures:")
             for title, err in failed:
                 summary.append(f"- {title}: {err}")
-                
+
+        if course_code and selected:
+            summary.append(f"\nFiles saved under `markdown_output/{course_code}/<category>/`. Use `scrape_index` or `list_section_pages` to see exact filenames.")
+
         results.extend(summary)
         return "\n".join(results)
         
@@ -255,6 +281,11 @@ def list_section_pages(course_code_or_url: str, sections: str, cookies: str = ""
     url = _resolve_url(course_code_or_url)
     config = _get_config(cookies)
     scraper = FitWikiScraper(config)
+
+    if course_code_or_url.startswith("http"):
+        course_code = _extract_course_code(course_code_or_url) or course_code_or_url
+    else:
+        course_code = course_code_or_url.lower()
     
     try:
         html = scraper._get_page_html(url)
@@ -271,7 +302,8 @@ def list_section_pages(course_code_or_url: str, sections: str, cookies: str = ""
         output = [f"Found {len(filtered_links)} pages/terms in sections [{sections}] of {course_code_or_url.upper()}:\n"]
         for i, l in enumerate(filtered_links, 1):
             slug = _page_slug(l['url'])
-            output.append(f"{i}. [{l['category']}] {l['title']} - File: {slug}.md - URL: {l['url']}")
+            md_path = f"markdown_output/{course_code}/{l['category']}/{slug}.md"
+            output.append(f"{i}. [{l['category']}] {l['title']} - {md_path} - URL: {l['url']}")
             
         return "\n".join(output)
     except Exception as e:
