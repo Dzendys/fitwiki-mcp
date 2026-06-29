@@ -115,8 +115,14 @@ The Docker image is built automatically on push (see `.github/workflows/docker-b
 - `download_page` – Scrape a page to Markdown and compile to PDF in one step.
 - `compile_pdf` – Compile a Markdown file to PDF.
 - `compile_category_pdfs` – Compile all Markdown files in a category to PDFs.
+- `read_saved_file` – Read a previously saved Markdown file by path.
 - `scrape_index` – Parse a course index and list discovered links.
-- `scrape_page` – Scrape a single page to Markdown.
+- `scrape_page` – Scrape a single page to Markdown and return its content.
 - `scrape_course` – Download all pages in selected categories for a course.
+- `download_page` – Scrape a page to Markdown, compile to PDF, and return the content.
+
+### Resources
+
+- `markdown://{path}` – Read a saved Markdown file relative to the project root (e.g. `markdown_output/bi-osy/zkouska/example.md`).
 
 
