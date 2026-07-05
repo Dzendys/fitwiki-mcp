@@ -119,6 +119,14 @@ The Docker image is built automatically on push (see `.github/workflows/docker-b
 - `scrape_index` – Parse a course index and list discovered links.
 - `scrape_page` – Scrape a single page to Markdown and return its content.
 - `scrape_course` – Download all pages in selected categories for a course.
-- `download_page` – Scrape a page to Markdown, compile to PDF, and return the content.
 
+---
 
+## Exposed MCP Resources
+
+The server exposes the following read-only resources:
+
+- `fitwiki://list`: Returns the list of subjects/courses documented on the student wiki.
+- `fitwiki://{course_code}/sections`: Returns the sections/categories for a given course.
+- `fitwiki://{course_code}/sections/{section}`: Returns the pages in a specific section.
+- `fitwiki://{course_code}/sections/{section}/{slug}`: Returns the content of a saved markdown page.
