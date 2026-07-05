@@ -22,9 +22,14 @@ class ScraperConfig:
     ):
         self.cookies = cookies or {}
         self.base_url = base_url.rstrip('/')
-        self.cache_dir = cache_dir
-        self.markdown_dir = markdown_dir
-        self.pdf_dir = pdf_dir
+        
+        # Determine the project root absolute path
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        # Resolve directories to absolute paths
+        self.cache_dir = cache_dir if os.path.isabs(cache_dir) else os.path.join(project_root, cache_dir)
+        self.markdown_dir = markdown_dir if os.path.isabs(markdown_dir) else os.path.join(project_root, markdown_dir)
+        self.pdf_dir = pdf_dir if os.path.isabs(pdf_dir) else os.path.join(project_root, pdf_dir)
         self.delay = delay
         
         self.headers = headers or {
