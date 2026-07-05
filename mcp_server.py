@@ -462,6 +462,28 @@ def list_courses(cookies: str = "") -> str:
     except Exception as e:
         return f"Error listing courses: {str(e)}"
 
+@mcp.resource("fitwiki://list")
+def list_courses_resource() -> str:
+    """Exposes the list of subjects/courses in FitWiki."""
+    return list_courses()
+
+@mcp.resource("fitwiki://{course_code}/sections")
+def list_course_sections_resource(course_code: str) -> str:
+    """Exposes the sections/categories for a given course."""
+    return list_course_sections(course_code)
+
+@mcp.resource("fitwiki://{course_code}/sections/{section}")
+def list_section_pages_resource(course_code: str, section: str) -> str:
+    """Exposes the pages in a specific section of a course."""
+    return list_section_pages(course_code, section)
+
+@mcp.resource("fitwiki://{course_code}/sections/{section}/{slug}")
+def read_saved_file_resource(course_code: str, section: str, slug: str) -> str:
+    """Exposes the content of a saved markdown page for a course, section, and slug."""
+    path = f"markdown_output/{course_code.lower()}/{section.lower()}/{slug.lower()}.md"
+    return read_saved_file(path)
+
 if __name__ == "__main__":
     transport = os.getenv("MCP_TRANSPORT", "stdio")
     mcp.run(transport=transport)
+
