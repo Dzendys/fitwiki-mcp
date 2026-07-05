@@ -34,7 +34,7 @@ Always determine the query target before calling any tools or resources:
 ### Available Resources:
 - `courses://list`: Lists all subjects.
 - `courses://{course_code}/index`: Exposes the navigation menu/sidebar for a subject.
-- `courses://{course_code}/pages/{page_path*}`: Exposes the content of a specific course subpage.
+- `courses://{course_code}/pages/{page_path}`: Exposes the content of a specific course subpage.
 
 ### Common Workflow Chaining:
 - **Retrieve Specific Page Content:**
