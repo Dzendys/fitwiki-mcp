@@ -1,52 +1,84 @@
-# Fit-Wiki Agent Workflow Rules
+# Antigravity Rules - Course Portals & Wiki Integration
 
-These instructions guide how AI agents should interact with the user and the codebase when discussing subjects, exams, or test materials in this workspace.
+You have access to two specialized Model Context Protocol (MCP) servers: `courses` and `fitwiki`. When researching course materials, follow this comprehensive prioritization, workflow, and execution guide.
 
-## 1. Context and Tools
-- This workspace contains a Fit-Wiki scraper and PDF compiler, integrated as an MCP server.
-- **CRITICAL:** Do NOT read, parse, or analyze the python files (e.g., `mcp_server.py`, `scraper.py`, `index_page.py`, `fitwiki/scraper.py`, `fitwiki/pdf.py`) to understand how to scrape or compile. The workspace has custom pre-registered MCP tools. Use them directly.
-- **CRITICAL:** MCP tools are **native agent tools** — they appear in your tool list just like `view_file` or `list_dir`. Call them directly. Do NOT try to invoke them via Bash, `run_command`, or any shell command. Do NOT try `./venv/bin/python -m fitwiki ...` or similar.
-- **How to detect if MCP is available:** Check your active tool list. If you see `list_course_sections`, `download_page`, etc. as callable tools — use them. If they are absent from your tool list — follow Section 4 (Fallback).
-- **Exposed MCP Tools** (callable as native agent tools, not shell commands):
-  - `list_courses`: Lists all subjects and courses available on the Fit-Wiki.
-  - `list_course_sections`: Lists sections and categories (e.g., 'zkouska', 'test1') for a given subject.
-  - `list_section_pages`: Lists individual pages and exam terms in specific course sections.
-  - `download_page`: Scrapes a single page to Markdown and compiles it to PDF in one action.
-  - `compile_pdf`: Compiles a specified Markdown file into a lightweight PDF.
-  - `compile_category_pdfs`: Compiles all Markdown files inside a category folder to PDFs.
+---
 
-## 2. Directory Structure
-- `cache/`: Local HTML files cache.
-- `markdown_output/<course_code>/<category>/`: Converted markdown files, grouped first by course code (e.g., `bi-osy`), then by category (e.g., `zkouska`). Example: `markdown_output/bi-osy/zkouska/`.
-- `pdfs/<course_code>/<category>/`: Compiled PDF files using the same nested structure. Example: `pdfs/bi-osy/zkouska/`.
+## 1. Portal Prioritization Matrix
 
-## 3. Resolving Course & Exam Queries
-If the user asks about a course or exam questions (e.g., "Co bylo na zkoušce z BI-PA1?"):
-1. **Identify the Course Code:** E.g., `BI-PA1` → `bi-pa1`, `bi-pai` → `bi-pai`.
-2. **List Sections:** Call `list_course_sections` with the course code.
-3. **List Pages in Section:** Call `list_section_pages` for the relevant section (typically `zkouska` for exams).
-4. **Locate Downloaded Markdown:** Check if the corresponding `.md` file is already in `markdown_output/<course_code>/<category>/`.
-   - If yes: read it using `view_file` to answer the question directly.
-   - If no: call `download_page` for the term to fetch the content, and then read the generated Markdown file to answer the user.
-5. **LaTeX Math:** When explaining math formulas from the wiki, refer to the LaTeX formulas embedded in the Markdown image alt attributes (e.g., `![formula](...)`).
-6. **DO NOT write custom python scripts or run raw curl commands to download or scrape pages.** Always use the MCP tools.
-7. **Proactively offer completeness:** When a user requests downloading or discussing a specific exam term, check if there are other terms in the same section (using `list_section_pages`). Proactively offer to download or list the other related terms so the user has the complete set of study materials.
+Always determine the query target before calling any tools or resources:
 
-## 4. Fallback if MCP Tools are Missing
-**How to detect:** If `list_course_sections`, `download_page`, and similar tools are NOT listed in your available tools — the MCP server is not running. Do NOT try to figure out why by reading source files.
+| Content Type | Primary Server | Secondary Server / Backup |
+| :--- | :--- | :--- |
+| **Official requirements, grading, exam criteria** | `courses` (Official) | None |
+| **Lecture slides, official labs, announcements** | `courses` (Official) | None |
+| **Past exam variants, exam answers, test history** | `fitwiki` (Student-run) | None |
+| **Student-written solutions, homework assignments** | `fitwiki` (Student-run) | None |
+| **Study guides, cheat sheets, community tips** | `fitwiki` (Student-run) | `courses` (for reference) |
 
-If the MCP tools are NOT present in your active tool declaration list, follow this exact sequence:
+---
 
-**Step 1 — Immediately notify the user** (one sentence max):
-> "The `fitwiki` MCP server is not running. To enable it, add the config from `~/.gemini/antigravity-cli/mcp_config.json` to your client settings and restart."
+## 2. Official Portal (`courses`) - Official Source
 
-**Step 2 — Answer immediately using the CLI fallback** (do NOT explore the codebase first):
-- Check if `markdown_output/<course_code>/` already has the relevant `.md` files using `list_dir`.
-- If files exist: read them with `view_file` and answer the user directly.
-- If files are missing: run `echo "all" | ./venv/bin/python scraper.py <course_code>` via Bash to download them, then read the resulting markdown.
+### Role & Purpose:
+`courses` (querying `courses.fit.cvut.cz`) is the **official source** for all course-related information. It contains authoritative details regarding course requirements, lecture slides, official laboratory sheets, grading/classification criteria, announcements, and structural syllabus.
 
-**STRICT PROHIBITIONS in fallback mode:**
-- Do NOT read `README.md`, `scraper.py`, `index_page.py`, `mcp_server.py`, or any other `.py` file.
-- Do NOT run `pip list`, `find`, or any other environment audit command.
-- Do NOT list the root workspace directory before acting.
-- Go directly to Step 2 without any exploration.
+### Available Tools:
+1. `list_courses(cookies)`: Lists subjects/courses available at FIT CTU. Highlights current enrollment when authenticated.
+2. `get_course_index(course_code)`: Retrieves the course homepage sidebar navigation menu, returning paths and titles.
+3. `get_page_content(course_code, page_path)`: Fetches a specific course subpage and returns its main body as clean Markdown.
+4. `search_course_content(course_code, query)`: Searches all subpages of a course for keyword query using local caches.
+5. `login(username, password)`: Performs OAuth handshake, logs in, and persists retrieved cookies in the local `.env` file.
+
+### Available Resources:
+- `courses://list`: Lists all subjects.
+- `courses://{course_code}/index`: Exposes the navigation menu/sidebar for a subject.
+- `courses://{course_code}/pages/{page_path*}`: Exposes the content of a specific course subpage.
+
+### Common Workflow Chaining:
+- **Retrieve Specific Page Content:**
+  `list_courses()` $\rightarrow$ verify course code $\rightarrow$ `get_course_index(course_code)` $\rightarrow$ identify target page path $\rightarrow$ `get_page_content(course_code, page_path)`.
+- **Search Subject Matter:**
+  `search_course_content(course_code, query)` $\rightarrow$ examine matching snippets $\rightarrow$ `get_page_content(course_code, page_path)` for complete context.
+- **Handling Authentication Failures:**
+  If a call returns unauthenticated or missing content, locate `.env` settings or invoke `login(username, password)` to establish cookies.
+
+---
+
+## 3. Student Wiki (`fitwiki`) - Student-Run Portal
+
+### Role & Purpose:
+`fitwiki` (querying `fit-wiki.cz`) is a **student-run community wiki** used for sharing unofficial study materials, past exam variants (exam papers/tasks from previous years), student-written solutions, homework assignments, study guides, and community tips.
+
+### Available Tools:
+1. `list_courses(cookies)`: Lists all FIT ČVUT subjects documented on the student wiki.
+2. `list_course_sections(course_code_or_url)`: Lists categories/material types (e.g., `zkouska`, `test1`, `ukoly`) for a course.
+3. `list_section_pages(course_code_or_url, sections)`: Lists individual pages (exam dates, test variants) within a section, providing local file paths and source URLs.
+4. `scrape_page(url, category, title)`: Scrapes a single wiki page, converts it to Markdown, saves it to disk, and returns the contents.
+5. `download_page(url, category, title)`: Scrapes the page, converts to Markdown, compiles a PDF document, and returns paths and markdown content.
+6. `scrape_course(index_path_or_url, categories)`: Downloads/scrapes all pages in chosen categories in one fast batch.
+7. `scrape_index(index_path_or_url)`: Parses a course index page to list all categories, URLs, and filenames before scraping.
+8. `read_saved_file(path)`: Re-reads a previously cached/scraped Markdown file. Lists directory files if target is missing.
+9. `compile_pdf(markdown_path, pdf_path)`: Compiles an offline Markdown file into a PDF.
+10. `compile_category_pdfs(category)`: Compiles all scraped pages in a category folder to PDFs in batch.
+
+### Available Resources:
+- `fitwiki://list`: Lists all subjects on the wiki.
+- `fitwiki://{course_code}/sections`: Exposes sections for a course.
+- `fitwiki://{course_code}/sections/{section}`: Lists pages in a specific section.
+- `fitwiki://{course_code}/sections/{section}/{slug}`: Exposes the contents of a saved/cached page.
+
+### Common Workflow Chaining:
+- **Discovering & Scraping Exam Materials:**
+  `list_courses()` $\rightarrow$ `list_course_sections(course_code)` $\rightarrow$ `list_section_pages(course_code, "zkouska")` $\rightarrow$ Check if local path exists $\rightarrow$ If cached, `read_saved_file(path)` $\rightarrow$ If not cached, `scrape_page(url, "zkouska", title)`.
+- **Batch Scrape & PDF Generation:**
+  `list_course_sections(course_code)` $\rightarrow$ `scrape_course(course_code, "zkouska,test1")` $\rightarrow$ `compile_category_pdfs("zkouska")`.
+
+---
+
+## 4. Execution Rules
+
+- **Silent Operations:** Run all tool and resource actions silently. Do NOT explain what tools/resources you are using, why you are calling them, or describe their parameters to the user prior to execution.
+- **Smart Caching Policy:** Check for existing offline Markdown files using `read_saved_file` (or path validation) before performing live scrapes. Do not repeat network requests for already saved materials.
+- **Automatic Continuation:** If a tool/resource output links to other directories or pages of interest, proceed with the relevant calls immediately without asking for user permission at each step.
+
