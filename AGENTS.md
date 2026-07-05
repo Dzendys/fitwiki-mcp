@@ -29,6 +29,7 @@ Always determine the query target before calling any tools or resources:
 3. `get_page_content(course_code, page_path)`: Fetches a specific course subpage and returns its main body as clean Markdown.
 4. `search_course_content(course_code, query)`: Searches all subpages of a course for keyword query using local caches.
 5. `login(username, password)`: Performs OAuth handshake, logs in, and persists retrieved cookies in the local `.env` file.
+6. `download_course_file(course_code, file_path, cookies)`: Downloads any linked slide (PDF), code, or file from the course portal.
 
 ### Available Resources:
 - `courses://list`: Lists all subjects.
@@ -38,6 +39,8 @@ Always determine the query target before calling any tools or resources:
 ### Common Workflow Chaining:
 - **Retrieve Specific Page Content:**
   `list_courses()` $\rightarrow$ verify course code $\rightarrow$ `get_course_index(course_code)` $\rightarrow$ identify target page path $\rightarrow$ `get_page_content(course_code, page_path)`.
+- **Downloading Course Materials (PDFs/Slides/ZIPs):**
+  Locate the relative link path in the page content $\rightarrow$ `download_course_file(course_code, file_path)`.
 - **Search Subject Matter:**
   `search_course_content(course_code, query)` $\rightarrow$ examine matching snippets $\rightarrow$ `get_page_content(course_code, page_path)` for complete context.
 - **Handling Authentication Failures:**
