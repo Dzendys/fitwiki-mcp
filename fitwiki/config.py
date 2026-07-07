@@ -6,21 +6,38 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-class ScraperConfig:
+class FitWikiConfig:
     """
-    Configuration class for the Fit-Wiki Scraper and PDF Compiler.
+    Configuration class for the Fit-Wiki Scraper, Client, and PDF Compiler.
     """
     def __init__(
         self,
+        cookies_str: str = "",
         cookies: Dict[str, str] = None,
         base_url: str = "https://fit-wiki.cz",
         cache_dir: str = "cache",
         markdown_dir: str = "markdown_output",
         pdf_dir: str = "pdfs",
-        delay: float = 1.0,
+        delay: float = 0.0,
         headers: Dict[str, str] = None
     ):
         self.cookies = cookies or {}
+        self.cookies_str = cookies_str
+        
+        # If cookies_str is provided, parse it into self.cookies
+        if cookies_str:
+            for item in cookies_str.split(';'):
+                item = item.strip()
+                if '=' in item:
+                    k, v = item.split('=', 1)
+                    self.cookies[k.strip()] = v.strip()
+        elif self.cookies:
+            # If only cookies dict is provided, format it into cookies_str
+            cookie_parts = []
+            for k, v in self.cookies.items():
+                cookie_parts.append(f"{k}={v}")
+            self.cookies_str = "; ".join(cookie_parts)
+
         self.base_url = base_url.rstrip('/')
         
         # Determine the project root absolute path
@@ -50,35 +67,32 @@ class ScraperConfig:
         }
 
     @classmethod
-    def from_cookie_string(cls, cookie_str: str, **kwargs) -> 'ScraperConfig':
+    def from_cookie_string(cls, cookie_str: str, **kwargs) -> 'FitWikiConfig':
         """
-        Parses a cookie string (e.g., 'DokuWiki=abc; DW...=xyz') into a ScraperConfig instance.
+        Parses a cookie string (e.g., 'DokuWiki=abc; DW...=xyz') into a FitWikiConfig instance.
         """
-        cookies = {}
-        if cookie_str:
-            for item in cookie_str.split(';'):
-                item = item.strip()
-                if '=' in item:
-                    k, v = item.split('=', 1)
-                    cookies[k.strip()] = v.strip()
-        return cls(cookies=cookies, **kwargs)
+        return cls(cookies_str=cookie_str, **kwargs)
 
     @classmethod
-    def from_env(cls, **kwargs) -> 'ScraperConfig':
+    def from_env(cls, **kwargs) -> 'FitWikiConfig':
         """
         Loads configuration from environment variables.
         """
         cookie_str = os.environ.get("FITWIKI_COOKIES", "")
         base_url = os.environ.get("FITWIKI_BASE_URL", "https://fit-wiki.cz")
-        delay_str = os.environ.get("FITWIKI_DELAY", "1.0")
+        delay_str = os.environ.get("FITWIKI_DELAY", "0.0")
         try:
             delay = float(delay_str)
         except ValueError:
             delay = 1.0
             
-        return cls.from_cookie_string(
-            cookie_str=cookie_str,
+        return cls(
+            cookies_str=cookie_str,
             base_url=base_url,
             delay=delay,
             **kwargs
         )
+
+
+# Backward compatibility alias
+ScraperConfig = FitWikiConfig

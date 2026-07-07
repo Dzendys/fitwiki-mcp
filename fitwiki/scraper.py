@@ -59,8 +59,23 @@ class FitWikiScraper:
                     # Handle paths relative to the current page if needed
                     full_url = f"{self.config.base_url}/{href}"
                 
-                # Exclude administrative dokuwiki links or external links
-                if 'do=' in full_url or 'id=' not in full_url and 'fit-wiki.cz' not in full_url:
+                # Exclude edit/history/admin actions
+                if 'do=' in full_url:
+                    continue
+                    
+                # Check media/attachment utility links
+                is_media = ('fetch.php' in full_url or 
+                            'detail.php' in full_url or 
+                            'media=' in full_url or 
+                            '_media/' in full_url or
+                            '_detail/' in full_url)
+                            
+                if is_media:
+                    # Keep only if it belongs to a valid course code namespace (not 'ostatni')
+                    course_code = self._extract_course_code(full_url)
+                    if course_code == 'ostatni':
+                        continue
+                elif 'id=' not in full_url and 'fit-wiki.cz' not in full_url:
                     continue
                 
                 # Categorize page based on URL patterns
@@ -84,22 +99,106 @@ class FitWikiScraper:
 
     def categorize_url(self, url: str) -> str:
         """
-        Dynamically detects material category based on URL patterns.
+        Dynamically detects material category based on URL namespace patterns,
+        grouping granular namespaces into standard categories.
         """
+        # If it's a media utility URL, rewrite it using the media parameter for category detection
+        if 'media=' in url.lower():
+            parsed_media = urllib.parse.urlparse(url)
+            query_media = urllib.parse.parse_qs(parsed_media.query)
+            media_id = query_media.get('media', [''])[0]
+            if media_id:
+                normalized_path = media_id.replace(':', '/')
+                url = f"{parsed_media.scheme}://{parsed_media.netloc}/{normalized_path}"
+
         decoded_url = urllib.parse.unquote(url.lower())
+        parsed = urllib.parse.urlparse(decoded_url)
         
-        if 'zkouska' in decoded_url or 'zkouška' in decoded_url:
-            return 'zkouska'
-        elif 'test1' in decoded_url or 'test-1' in decoded_url:
-            return 'test1'
-        elif 'test2' in decoded_url or 'test-2' in decoded_url:
-            return 'test2'
-        elif 'test-a' in decoded_url or 'testa' in decoded_url:
-            return 'test-a'
-        elif 'test' in decoded_url:
-            return 'testy'
-        else:
+        # 1. Gather all potential namespace parts
+        parts = []
+        
+        # Add path parts
+        for p in parsed.path.split('/'):
+            if p:
+                parts.append(p)
+                
+        # Add query 'id' parts
+        query = urllib.parse.parse_qs(parsed.query)
+        if 'id' in query:
+            id_val = query['id'][0]
+            for p in id_val.split(':'):
+                if p:
+                    parts.append(p)
+                    
+        # Remove diacritics from all parts for clean comparison
+        clean_parts = []
+        for p in parts:
+            nfd = unicodedata.normalize('NFD', p)
+            clean_p = "".join(c for c in nfd if unicodedata.category(c) != 'Mn')
+            clean_parts.append(clean_p)
+            
+        # 2. Extract course code first
+        course_code = self._extract_course_code(url)
+        
+        # 3. Determine the raw namespace category (the part immediately after the course code)
+        raw_category = ""
+        if course_code and course_code != 'ostatni':
+            for i, part in enumerate(clean_parts):
+                is_match = (part == course_code or 
+                            part.startswith(course_code + '_') or 
+                            part.startswith(course_code + '-'))
+                if is_match and i + 1 < len(clean_parts):
+                    raw_category = clean_parts[i+1]
+                    break
+                    
+        # If no raw category was extracted from namespaces, fall back to looking at the path parts
+        if not raw_category or raw_category in ['start', 'index', 'doku.php']:
+            # Try to grab a non-empty part that isn't administrative
+            for p in reversed(clean_parts):
+                if p not in ['start', 'index', 'doku.php', course_code]:
+                    raw_category = p
+                    break
+
+        # Clean raw category
+        raw_category = re.sub(r'[^a-z0-9_\-]', '', raw_category.lower())
+        
+        # Guard against administrative utility names
+        if raw_category in ['fetchphp', 'detailphp', 'lib', 'exe', 'media']:
             return 'ostatni'
+
+        # 4. Group granular raw categories into logical buckets using keyword matching
+        if 'zkousk' in raw_category or 'zkoušk' in raw_category:
+            return 'zkouska'
+        elif 'test1' in raw_category or 'test-1' in raw_category:
+            return 'test1'
+        elif 'test2' in raw_category or 'test-2' in raw_category:
+            return 'test2'
+        elif 'test-a' in raw_category:
+            return 'test-a'
+        elif 'test' in raw_category:
+            return 'testy'
+        elif 'prednask' in raw_category or 'lecture' in raw_category:
+            return 'prednasky'
+        elif 'cvicen' in raw_category or 'lab' in raw_category:
+            return 'cviceni'
+        elif 'ukol' in raw_category or 'homework' in raw_category:
+            if 'ukol01' in raw_category or 'ukol_01' in raw_category or 'ukol1' in raw_category or 'ukol_1' in raw_category or 'homework1' in raw_category or 'homework_1' in raw_category:
+                return 'ukoly-1'
+            elif 'ukol02' in raw_category or 'ukol_02' in raw_category or 'ukol2' in raw_category or 'ukol_2' in raw_category or 'homework2' in raw_category or 'homework_2' in raw_category:
+                return 'ukoly-2'
+            elif 'ukol03' in raw_category or 'ukol_03' in raw_category or 'ukol3' in raw_category or 'ukol_3' in raw_category or 'homework3' in raw_category or 'homework_3' in raw_category:
+                return 'ukoly-3'
+            return 'ukoly'
+        elif 'semestr' in raw_category:
+            return 'semestralky'
+            
+        # If it doesn't fit standard buckets but is a valid custom namespace, return it
+        if raw_category and raw_category not in ['start', 'index', 'doku.php']:
+            return raw_category
+
+        return 'ostatni'
+
+
 
     def _url_to_cache_filename(self, url: str) -> str:
         """
@@ -137,7 +236,8 @@ class FitWikiScraper:
         response = requests.get(
             url,
             headers=self.config.headers,
-            cookies=self.config.cookies
+            cookies=self.config.cookies,
+            timeout=10
         )
         response.raise_for_status()
         html = response.text
@@ -217,6 +317,17 @@ class FitWikiScraper:
         Extracts the course code (e.g., 'bi-osy') from the Fit-Wiki URL.
         """
         parsed = urllib.parse.urlparse(url)
+        
+        # Check media query param first (for attachments)
+        query = urllib.parse.parse_qs(parsed.query)
+        if 'media' in query:
+            media_id = query['media'][0].lower()
+            # Normalize to colon-separated parts
+            media_parts = media_id.split(':')
+            for i, part in enumerate(media_parts):
+                if part in ['predmety', 'subjects'] and i + 1 < len(media_parts):
+                    return media_parts[i+1].split('_')[0]
+                    
         path = parsed.path
         parts = [p for p in path.split('/') if p]
         
@@ -339,7 +450,8 @@ class FitWikiScraper:
             response = requests.get(
                 full_img_url,
                 headers=self.config.headers,
-                cookies=self.config.cookies
+                cookies=self.config.cookies,
+                timeout=10
             )
             response.raise_for_status()
             
@@ -376,7 +488,7 @@ class FitWikiScraper:
             
         return md_content
 
-    def scrape_page(self, url: str, category: str, page_title: str) -> str:
+    def scrape_page(self, url: str, category: str, page_title: str, course_code: Optional[str] = None) -> str:
         """
         Full page scraping pipeline: cache check, download, sanitize, download images, convert to markdown.
         Returns the path to the saved Markdown file.
@@ -396,7 +508,8 @@ class FitWikiScraper:
             wikitext_response = requests.get(
                 wikitext_url,
                 headers=self.config.headers,
-                cookies=self.config.cookies
+                cookies=self.config.cookies,
+                timeout=10
             )
             if wikitext_response.status_code == 200:
                 # Find all <latex>...</latex> blocks
@@ -406,7 +519,7 @@ class FitWikiScraper:
             print(f"Warning: Could not fetch wikitext for LaTeX extraction: {e}")
         
         # Extract course code to separate output directories by subject
-        course_code = self._extract_course_code(url)
+        course_code = course_code or self._extract_course_code(url)
         
         # Process and download images / substitute LaTeX formulas
         latex_idx = 0
