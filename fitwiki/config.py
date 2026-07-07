@@ -78,6 +78,7 @@ class FitWikiConfig:
         """
         Loads configuration from environment variables.
         """
+        load_dotenv(override=True)
         cookie_str = os.environ.get("FITWIKI_COOKIES", "")
         base_url = os.environ.get("FITWIKI_BASE_URL", "https://fit-wiki.cz")
         delay_str = os.environ.get("FITWIKI_DELAY", "0.0")
