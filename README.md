@@ -91,22 +91,6 @@ Restart the client after saving. For AGY, verify with `/mcp` in chat.
 
 ---
 
-## Docker
-
-### Build & Run
-
-```bash
-docker compose up -d
-```
-
-The container exposes the MCP server on port 8000 via streamable-http. Mounted volumes persist `markdown_output/` and `pdfs/` on the host.
-
-### GitHub Container Registry
-
-The Docker image is built automatically on push (see `.github/workflows/docker-build.yml`) and published to `ghcr.io/<your-username>/fitwiki-mcp`. Tags: `latest`, `master`, short SHA.
-
----
-
 ## Exposed MCP Tools
 
 - `list_courses` – List all courses on the FIT platform.
