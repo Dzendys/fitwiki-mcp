@@ -28,14 +28,18 @@ It enables LLMs (such as Claude, AGY, or Open WebUI) to list subjects documented
 
 ## Configuration
 
-Duplicate the `.env.example` file to `.env` and set up your preferred authentication method:
+Duplicate the `.env.example` file to `.env` and set up your authentication cookies:
 
 ```env
-# Set session cookie for authenticating private/enrolled subjects
-FITWIKI_COOKIES="DokuWiki=your-cookie-value"
+# Fit-Wiki Scraper & MCP Server Configuration
 
-# Optional configuration overrides
+# DokuWiki session cookies (retrieve these from your browser developer console)
+FITWIKI_COOKIES="DokuWiki=your-session-cookie"
+
+# Target course URL
 # FITWIKI_BASE_URL="https://fit-wiki.cz"
+
+# Scraping delay in seconds between requests (prevents being rate-limited/blocked)
 # FITWIKI_DELAY=1.0
 ```
 
