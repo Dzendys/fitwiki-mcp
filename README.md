@@ -49,19 +49,13 @@ You can run the scraper directly from the command line using the provided script
 ```bash
 ./venv/bin/python scraper.py [course_code]
 ```
+If you provide a course code (e.g. `bi-osy`), the scraper downloads the index page, parses it, and lets you choose categories to scrape. If run without arguments, it attempts to read an existing `index-page.html` from the workspace.
 
 ### 2. Convert Markdown to PDF
 ```bash
 ./venv/bin/python convert_to_pdf.py
 ```
-This compiles all files in `markdown_output/` to `pdfs/`.
-
-### 3. Pipeline Run
-```bash
-./venv/bin/python index_page.py bi-osy            # download index
-./venv/bin/python scraper.py                      # scrape to Markdown
-./venv/bin/python convert_to_pdf.py               # compile PDFs
-```
+Compiles all downloaded markdown pages under `markdown_output/` into PDF files in the `pdfs/` directory.
 
 ---
 
@@ -93,7 +87,7 @@ Add the following to your client's MCP configuration file. Cookies are loaded fr
 | AGY (IDE / 2.0) | `~/.gemini/config/mcp_config.json` |
 | OpenCode | `.opencode.json` in the workspace root |
 
-Restart the client after saving. For AGY, verify with `/mcp` in chat.
+Restart the client after saving.
 
 ### Transports
 
