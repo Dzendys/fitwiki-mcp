@@ -1,51 +1,62 @@
-# Fit-Wiki Scraper & MCP Server
+# FitWiki MCP Server
 
-Python tool for extracting course materials, exam variants, and notes from Fit-Wiki. Includes an MCP server for integration with LLM clients (Claude, AGY, OpenCode).
+An MCP (Model Context Protocol) server designed for the student-run Faculty of Information Technology, Czech Technical University (FIT CTU) community wiki: fit-wiki.cz.
+
+It enables LLMs (such as Claude, AGY, or Open WebUI) to list subjects documented on the student wiki, navigate their sections (exams, tests, homework), download pages and attachments, and read study materials converted to clean Markdown.
 
 ---
 
-## Requirements
+## Features
 
-- Python 3.12+
-- Liberation Sans and Liberation Mono fonts (for correct Czech diacritics in PDFs)
+- **Automated Scraping & Sanitization:** Downloads community wiki pages, handles media/image assets, and converts the content into readable, clean Markdown.
+- **Direct Attachment Handling:** Intercepts binary attachments (like ZIPs, RARs, PDFs) and downloads them natively, bypassing markdown wrappers.
+- **Document Compiling:** Compiles scraped Markdown pages into high-quality offline PDF documents.
+- **Intelligent Cache & Category Detection:** Automatically groups wiki pages into categories (exams, tests, labs) using advanced namespace mapping and maintains a local cache to avoid redundant requests.
 
-## Setup
+---
 
-```bash
-python3 -m venv venv
-./venv/bin/pip install -r requirements.txt
-```
+## Installation
+
+1. Clone or copy this repository into your chosen directory.
+2. Initialize the Python virtual environment and install the required dependencies:
+   ```bash
+   python3 -m venv venv
+   ./venv/bin/pip install -r requirements.txt
+   ```
+
+---
 
 ## Configuration
 
-Copy [`.env.example`](.env.example) to `.env` and fill in your cookies:
+Duplicate the `.env.example` file to `.env` and set up your preferred authentication method:
 
-```bash
-cp .env.example .env
+```env
+# Set session cookie for authenticating private/enrolled subjects
+FITWIKI_COOKIES="DokuWiki=your-cookie-value"
+
+# Optional configuration overrides
+# FITWIKI_BASE_URL="https://fit-wiki.cz"
+# FITWIKI_DELAY=1.0
 ```
-
-Alternatively, pass `FITWIKI_COOKIES` as an environment variable in the MCP client config.
 
 ---
 
 ## CLI Usage
 
-### Scrape a course to Markdown
+You can run the scraper directly from the command line using the provided scripts:
 
+### 1. Scrape a Course to Markdown
 ```bash
 ./venv/bin/python scraper.py [course_code]
 ```
 
-### Convert Markdown to PDF
-
+### 2. Convert Markdown to PDF
 ```bash
 ./venv/bin/python convert_to_pdf.py
 ```
+This compiles all files in `markdown_output/` to `pdfs/`.
 
-Compiles all files in `markdown_output/` to `pdfs/`.
-
-### Pipeline (single page)
-
+### 3. Pipeline Run
 ```bash
 ./venv/bin/python index_page.py bi-osy            # download index
 ./venv/bin/python scraper.py                      # scrape to Markdown
@@ -54,13 +65,13 @@ Compiles all files in `markdown_output/` to `pdfs/`.
 
 ---
 
-## MCP Server
+## MCP Server Setup
 
 The MCP server exposes Fit-Wiki tools to LLM clients. It runs via stdio or streamable-http.
 
 ### Client Configuration
 
-Add the following to your client's MCP config file. Cookies are loaded from the `.env` file (see [`.env.example`](.env.example)).
+Add the following to your client's MCP configuration file. Cookies are loaded from the `.env` file (see [`.env.example`](.env.example)).
 
 ```json
 {
@@ -93,7 +104,7 @@ Restart the client after saving. For AGY, verify with `/mcp` in chat.
 
 ## Exposed MCP Tools
 
-- `list_courses` – List all courses on the FIT platform.
+- `list_courses` – List all courses documented on the student wiki.
 - `list_course_sections` – List sections (e.g. `zkouska`, `test1`) for a course.
 - `list_section_pages` – List pages within specific sections.
 - `download_page` – Scrape a page to Markdown and compile to PDF in one step.
@@ -110,7 +121,7 @@ Restart the client after saving. For AGY, verify with `/mcp` in chat.
 
 The server exposes the following read-only resources:
 
-- `fitwiki://list`: Returns the list of subjects/courses documented on the student wiki.
-- `fitwiki://{course_code}/sections`: Returns the sections/categories for a given course.
-- `fitwiki://{course_code}/sections/{section}`: Returns the pages in a specific section.
-- `fitwiki://{course_code}/sections/{section}/{slug}`: Returns the content of a saved markdown page.
+- `fitwiki://list` – Returns the list of subjects/courses documented on the student wiki.
+- `fitwiki://{course_code}/sections` – Returns the sections/categories for a given course.
+- `fitwiki://{course_code}/sections/{section}` – Returns the pages in a specific section.
+- `fitwiki://{course_code}/sections/{section}/{slug}` – Returns the content of a saved markdown page.
